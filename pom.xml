@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>de.fhdo.lemma.cml_lemma_transformer</groupId>
+	<artifactId>CmlToLemmaTransformer</artifactId>
+	<version>1.0-SNAPSHOT</version>
+
+	<repositories>
+		<repository>
+			<id>repository.seelab.fh-dortmund.de</id>
+			<name>seelab</name>
+			<url>https://repository.seelab.fh-dortmund.de/repository/maven-public</url>
+		</repository>
+	</repositories>
+
+	<properties>
+		<maven.compiler.source>11</maven.compiler.source>
+		<maven.compiler.target>11</maven.compiler.target>
+		<lemma.version>0.8.5-SNAPSHOT</lemma.version>
+	</properties>
+
+	<dependencies>
+		<!-- https://mvnrepository.com/artifact/org.contextmapper/context-mapper-dsl -->
+		<dependency>
+			<groupId>org.contextmapper</groupId>
+			<artifactId>context-mapper-dsl</artifactId>
+			<version>6.5.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>de.fhdo.lemma.model_processing</groupId>
+			<artifactId>de.fhdo.lemma.model_processing</artifactId>
+			<version>${lemma.version}</version>
+			<classifier>all-dependencies</classifier>
+		</dependency>
+
+		<dependency>
+			<groupId>de.fhdo.lemma.servicedsl</groupId>
+			<artifactId>de.fhdo.lemma.servicedsl</artifactId>
+			<version>${lemma.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>de.fhdo.lemma.servicedsl</groupId>
+			<artifactId>de.fhdo.lemma.servicedsl.metamodel</artifactId>
+			<version>${lemma.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>de.fhdo.lemma.data.datadsl</groupId>
+			<artifactId>de.fhdo.lemma.data.datadsl</artifactId>
+			<version>${lemma.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>de.fhdo.lemma.data.datadsl</groupId>
+			<artifactId>de.fhdo.lemma.data.datadsl.metamodel</artifactId>
+			<version>${lemma.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>de.fhdo.lemma.intermediate</groupId>
+			<artifactId>de.fhdo.lemma.data.intermediate.metamodel</artifactId>
+			<version>${lemma.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>de.fhdo.lemma.intermediate</groupId>
+			<artifactId>de.fhdo.lemma.service.intermediate.metamodel</artifactId>
+			<version>${lemma.version}</version>
+		</dependency>
+
+
+	</dependencies>
+</project>
