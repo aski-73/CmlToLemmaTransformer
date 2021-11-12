@@ -1,6 +1,16 @@
 package de.fhdo.lemma.examples.model_processing.latest;
 
-import de.fhdo.lemma.model_processing.UtilKt;
+import java.io.File;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.jetbrains.annotations.NotNull;
+
 import de.fhdo.lemma.model_processing.annotations.CodeGenerationModule;
 import de.fhdo.lemma.model_processing.builtin_phases.code_generation.AbstractCodeGenerationModule;
 import de.fhdo.lemma.service.intermediate.IntermediateInterface;
@@ -10,16 +20,6 @@ import de.fhdo.lemma.service.intermediate.IntermediatePackage;
 import de.fhdo.lemma.service.intermediate.IntermediateParameter;
 import de.fhdo.lemma.service.intermediate.IntermediateServiceModel;
 import kotlin.Pair;
-import org.jetbrains.annotations.NotNull;
-
-import java.io.File;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * LEMMA's model processing framework supports model-based structuring of code generators. This class implements a
