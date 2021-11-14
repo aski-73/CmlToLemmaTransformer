@@ -1,27 +1,18 @@
 package de.fhdo.lemma.cml_transformer;
 
-import com.google.common.base.Objects;
+import de.fhdo.lemma.cml_transformer.code_generators.DomainDataModelCodeGenerator;
 import de.fhdo.lemma.cml_transformer.factory.LemmaDomainDataModelFactory;
-import de.fhdo.lemma.data.ComplexType;
-import de.fhdo.lemma.data.Context;
 import de.fhdo.lemma.data.DataModel;
-import de.fhdo.lemma.data.DataStructure;
-import de.fhdo.lemma.data.Enumeration;
-import de.fhdo.lemma.data.EnumerationField;
-import de.fhdo.lemma.data.ListType;
-import de.fhdo.lemma.data.PrimitiveValue;
 import de.fhdo.lemma.model_processing.annotations.CodeGenerationModule;
 import de.fhdo.lemma.model_processing.builtin_phases.code_generation.AbstractCodeGenerationModule;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import kotlin.Pair;
 import org.contextmapper.dsl.contextMappingDSL.ContextMappingDSLPackage;
 import org.contextmapper.dsl.contextMappingDSL.ContextMappingModel;
-import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.xtend2.lib.StringConcatenation;
 import org.jetbrains.annotations.NotNull;
@@ -77,8 +68,9 @@ public class CmlCodeGenerationModule extends AbstractCodeGenerationModule {
     StringBuilder resultFileContents = new StringBuilder();
     EObject _get = this.getResource().getContents().get(0);
     ContextMappingModel cmlModel = ((ContextMappingModel) _get);
-    LemmaDomainDataModelFactory factory = new LemmaDomainDataModelFactory();
-    DataModel lemmaDataModel = factory.generateDataModel(cmlModel);
+    LemmaDomainDataModelFactory factory = new LemmaDomainDataModelFactory(cmlModel);
+    DataModel lemmaDataModel = factory.generateDataModel();
+    System.out.println(DomainDataModelCodeGenerator.printDataModel(lemmaDataModel));
     StringConcatenation _builder = new StringConcatenation();
     String _targetFolder = this.getTargetFolder();
     _builder.append(_targetFolder);
@@ -88,81 +80,5 @@ public class CmlCodeGenerationModule extends AbstractCodeGenerationModule {
     Map<String, String> resultMap = new HashMap<String, String>();
     resultMap.put(resultFilePath, resultFileContents.toString());
     return this.withCharset(resultMap, StandardCharsets.UTF_8.name());
-  }
-  
-  private String renderDataModelContext(final Context context) {
-    throw new Error("Unresolved compilation problems:"
-      + "\nThe method or field attributeList is undefined for the type ComplexType"
-      + "\nThe method printLemmaAbstractAttribute(Object) is undefined"
-      + "\nThe method or field lemmaListList is undefined for the type Context"
-      + "\ncomment cannot be resolved"
-      + "\n!== cannot be resolved"
-      + "\ncomment cannot be resolved"
-      + "\ncomment cannot be resolved"
-      + "\n!== cannot be resolved"
-      + "\ncomment cannot be resolved"
-      + "\nname cannot be resolved"
-      + "\nname cannot be resolved"
-      + "\nname cannot be resolved"
-      + "\ntoFirstLower cannot be resolved"
-      + "\ncharAt cannot be resolved");
-  }
-  
-  private String _renderDataModelComplexType(final DataStructure dataStructure) {
-    return null;
-  }
-  
-  private String _renderDataModelComplexType(final ListType listType) {
-    return null;
-  }
-  
-  private String _renderDataModelComplexType(final Enumeration enumeration) {
-    StringConcatenation _builder = new StringConcatenation();
-    _builder.append("enum ");
-    String _name = enumeration.getName();
-    _builder.append(_name);
-    _builder.append(" {");
-    _builder.newLineIfNotEmpty();
-    {
-      EList<EnumerationField> _fields = enumeration.getFields();
-      boolean _hasElements = false;
-      for(final EnumerationField enumField : _fields) {
-        if (!_hasElements) {
-          _hasElements = true;
-        } else {
-          _builder.appendImmediate(",", "\t");
-        }
-        _builder.append("\t");
-        String _name_1 = enumField.getName();
-        _builder.append(_name_1, "\t");
-        {
-          PrimitiveValue _initializationValue = enumField.getInitializationValue();
-          boolean _notEquals = (!Objects.equal(_initializationValue, null));
-          if (_notEquals) {
-            _builder.append("(");
-            PrimitiveValue _initializationValue_1 = enumField.getInitializationValue();
-            _builder.append(_initializationValue_1, "\t");
-            _builder.append(")");
-          }
-        }
-        _builder.newLineIfNotEmpty();
-      }
-    }
-    _builder.append("}");
-    _builder.newLine();
-    return _builder.toString();
-  }
-  
-  private String renderDataModelComplexType(final ComplexType dataStructure) {
-    if (dataStructure instanceof DataStructure) {
-      return _renderDataModelComplexType((DataStructure)dataStructure);
-    } else if (dataStructure instanceof Enumeration) {
-      return _renderDataModelComplexType((Enumeration)dataStructure);
-    } else if (dataStructure instanceof ListType) {
-      return _renderDataModelComplexType((ListType)dataStructure);
-    } else {
-      throw new IllegalArgumentException("Unhandled parameter types: " +
-        Arrays.<Object>asList(dataStructure).toString());
-    }
   }
 }

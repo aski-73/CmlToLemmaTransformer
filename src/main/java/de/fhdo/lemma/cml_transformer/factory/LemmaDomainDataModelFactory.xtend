@@ -19,26 +19,63 @@ import org.contextmapper.tactic.dsl.tacticdsl.ValueObject
 import de.fhdo.lemma.data.ComplexTypeFeature
 import de.fhdo.lemma.data.ListType
 import de.fhdo.lemma.data.Enumeration
+import org.contextmapper.dsl.contextMappingDSL.BoundedContextType
+import de.fhdo.lemma.data.Type
+import de.fhdo.lemma.data.PrimitiveBoolean
+import de.fhdo.lemma.data.PrimitiveString
+import de.fhdo.lemma.data.PrimitiveInteger
+import de.fhdo.lemma.data.PrimitiveLong
+import de.fhdo.lemma.data.PrimitiveDouble
+import de.fhdo.lemma.data.PrimitiveFloat
+import de.fhdo.lemma.data.PrimitiveType
+import org.contextmapper.tactic.dsl.tacticdsl.Reference
+import de.fhdo.lemma.data.PrimitiveUnspecified
 
 class LemmaDomainDataModelFactory {
 	static val DATA_FACTORY = DataFactory.eINSTANCE
 
+	static val PRIMITIVE_LEMMA_TYPES = #[
+		"int",
+		"long",
+		"float",
+		"double",
+		"string",
+		"boolean"
+	]
+
+	/**
+	 * Input Model (CML)
+	 */
+	private ContextMappingModel cmlModel;
+
+	/**
+	 * Output Model (LEMMA DML)
+	 */
+	private DataModel dataModel;
+
+	/**
+	 * Helper for tracking the created ComplexTypes in a context
+	 */
+	private Context currentCtx;
+
+	new(ContextMappingModel cmlModel) {
+		this.cmlModel = cmlModel
+	}
+
 	/**
 	 * Maps CML Model {@link ContextMappingModel} to LEMMA DML Model {@link DataModel}
 	 */
-	def DataModel generateDataModel(ContextMappingModel cmlModel) {
-		val dataModel = DATA_FACTORY.createDataModel
-		cmlModel.boundedContexts.forEach[bc |
+	def DataModel generateDataModel() {
+		this.dataModel = DATA_FACTORY.createDataModel
+
+		cmlModel.boundedContexts.forEach [ bc |
 			val ctx = mapBoundedContext2Context(bc);
-			
+
 			// Tell the Context in which DataModel it is and visa versa
-			ctx.dataModel =  dataModel
+			ctx.dataModel = dataModel
 			dataModel.contexts.add(ctx)
-			
-			//  The DataModel also contains references to all ComplexTypes of all Context instances
-			dataModel.complexTypes.addAll(ctx.complexTypes)
 		]
-		
+
 		return dataModel
 	}
 
@@ -47,6 +84,9 @@ class LemmaDomainDataModelFactory {
 	 */
 	private def Context mapBoundedContext2Context(BoundedContext bc) {
 		val ctx = DATA_FACTORY.createContext
+		ctx.name = bc.name
+
+		this.currentCtx = ctx;
 
 		bc.aggregates.forEach [ agg |
 			val dataStructures = mapAggregate2ComplexType(agg)
@@ -69,9 +109,6 @@ class LemmaDomainDataModelFactory {
 	private def List<ComplexType> mapAggregate2ComplexType(Aggregate agg) {
 		// contains all extracted Entities and Value Objectsof an CML Aggregate
 		val dataStructures = <ComplexType>newLinkedList
-
-		val lemmaAggregate = createDataStructure(agg.name)
-		dataStructures.add(lemmaAggregate)
 
 		// A CML Aggregate contains Entities, Value Objects and Domain Services
 		for (obj : agg.domainObjects) {
@@ -106,9 +143,17 @@ class LemmaDomainDataModelFactory {
 	 * Maps CML {@link ValueObject} and {@link Entity} to LEMMA DML {@link DataStructure}
 	 * */
 	private def dispatch ComplexType mapDomainObject2ConcreteComplexType(DomainObject obj) {
+		val alreadyMappedType = obj.alreadyMapped
+		if (alreadyMappedType != null) {
+			return alreadyMappedType
+		}
+
 		val lemmaStructure = createDataStructure(obj.name)
 
-		// Determine LEMMA Feature
+		// Determine LEMMA Features
+		if (obj.aggregateRoot) {
+			lemmaStructure.features.add(ComplexTypeFeature.AGGREGATE)
+		}
 		val feature = if (obj instanceof Entity) {
 				ComplexTypeFeature.ENTITY
 			} else if (obj instanceof ValueObject) {
@@ -116,20 +161,77 @@ class LemmaDomainDataModelFactory {
 			} else { // Event
 				ComplexTypeFeature.DOMAIN_EVENT
 			}
-
 		lemmaStructure.features.add(feature)
 
-		// Add Operations
-		// TODO
-		// Add Attributes
-		// TODO
+		// Add fields. CML separates fields in Attributes and References. 
+		// Attributes are primitive types ...
+		obj.attributes.forEach [ attr |
+			val field = DATA_FACTORY.createDataField
+			field.name = attr.name
+			field.immutable = attr.isNotChangeable
+
+			// field type (primitive)
+			field.primitiveType = mapPrimitiveType(attr.type)
+
+			// Knows in which DataStructure it is contained
+			field.dataStructure = lemmaStructure
+
+			lemmaStructure.dataFields.add(field)
+		]
+		// ... while References are complex types
+		obj.references.forEach [ ref |
+			val field = DATA_FACTORY.createDataField
+			field.name = ref.name
+			field.immutable = ref.isNotChangeable
+
+			// field type (primitive)
+			field.complexType = mapReferenceType(ref.domainObjectType)
+
+			// Knows in which DataStructure it is contained
+			field.dataStructure = lemmaStructure
+
+			lemmaStructure.dataFields.add(field)
+		]
+		
+		
+		// Add DataOperations
+		obj.operations.forEach([ op |
+			val lemmaOp = DATA_FACTORY.createDataOperation
+			lemmaOp.name = op.name
+			if (op.returnType === null) {
+				lemmaOp.hasNoReturnType = true
+			} else { // Set ReturnType
+				if (op.returnType.domainObjectType != null) {
+					lemmaOp.complexReturnType = mapReferenceType(op.returnType.domainObjectType)
+				} else {
+					lemmaOp.primitiveReturnType = mapPrimitiveType(op.returnType.type)
+				}
+			}
+			
+			
+			
+			// Add DataOperationParameters
+			op.parameters.forEach([ param |
+				val lemmaParam = DATA_FACTORY.createDataOperationParameter
+				lemmaParam.name = param.name
+				if (param.parameterType.domainObjectType !== null) { // Complex Type
+					lemmaParam.complexType = mapReferenceType(param.parameterType.domainObjectType)
+				} else { // Primitive Type
+					lemmaParam.primitiveType = mapPrimitiveType(param.parameterType.type)
+				}
+				lemmaOp.parameters.add(lemmaParam)
+			])
+			lemmaStructure.operations.add(lemmaOp)
+		])
+
 		return lemmaStructure
 	}
 
 	/**
 	 * Maps CML {@link org.contextmapper.tactic.dsl.tacticdsl.Enum} to LEMMA DML {@link Enumeration}
 	 */
-	private def dispatch ComplexType mapDomainObject2ConcreteComplexType(org.contextmapper.tactic.dsl.tacticdsl.Enum obj) {
+	private def dispatch ComplexType mapDomainObject2ConcreteComplexType(
+		org.contextmapper.tactic.dsl.tacticdsl.Enum obj) {
 		val lemmaEnum = createEnumeration(obj.name)
 
 		obj.values.forEach [ enumValue |
@@ -207,5 +309,75 @@ class LemmaDomainDataModelFactory {
 //        if (generateUniqueName)
 //            listType.name = qualifiedName(listType).toUniqueName(DataModel)
 		return listType
+	}
+
+	/**
+	 * Maps CML types (String values) to LEMMA DML types. 
+	 * Checks if its a primitive type by checking the internal type map {@link KNOWN_TYPES}. 
+	 * - If yes return the corresponding LEMMA DML type from the internal map {@link KNOWN_TYPES}.
+	 * - If no, return "unspecified"
+	 */
+	private def PrimitiveType mapPrimitiveType(String type) {
+		return switch (type.toLowerCase) {
+			case "boolean":
+				DATA_FACTORY.createPrimitiveBoolean
+			case "string":
+				DATA_FACTORY.createPrimitiveString
+			,
+			case "int":
+				DATA_FACTORY.createPrimitiveInteger
+			,
+			case "integer":
+				DATA_FACTORY.createPrimitiveInteger
+			,
+			case "long":
+				DATA_FACTORY.createPrimitiveLong
+			,
+			case "double":
+				DATA_FACTORY.createPrimitiveDouble
+			,
+			case "float":
+				DATA_FACTORY.createPrimitiveFloat
+			,
+			case "date":
+				DATA_FACTORY.createPrimitiveDate
+			,
+			case "datetime":
+				DATA_FACTORY.createPrimitiveDate
+			,
+			case "timestamp":
+				DATA_FACTORY.createPrimitiveDate
+			default:
+				DATA_FACTORY.createPrimitiveUnspecified
+		}
+	}
+
+	/**
+	 * Maps CML reference types to LEMMA DML complex types by returning the needed Complex Type from the LEMMA data model.
+	 * If its not existing, it will be created on the fly.
+	 */
+	private def ComplexType mapReferenceType(SimpleDomainObject sObj) {
+		for (cType : this.dataModel.complexTypes) {
+			if (sObj.equals(cType.name))
+				return cType;
+		}
+
+		// Not in the data model yet. Create it
+		return mapSimpleDomainObject2ComplexType(sObj)
+	// Return null to mark it. Needs to be reevaluated as soon as the corresponding data structure is created
+	}
+
+	/**
+	 * Checks whether a CML {@link DomainObject} was already mapped.
+	 * Needed since a ComplexType is being created on the fly when not existing in the
+	 * {@link LemmaDomainDataModelFactory#mapReferenceType} method.
+	 */
+	private def ComplexType alreadyMapped(DomainObject obj) {
+		for (ComplexType cType : this.currentCtx.complexTypes) {
+			if (cType.name.equals(obj.name))
+				return cType;
+		}
+
+		return null;
 	}
 }

@@ -27,6 +27,11 @@ import de.fhdo.lemma.data.Context
 import de.fhdo.lemma.data.DataStructure
 import de.fhdo.lemma.data.ListType
 import java.util.Enumeration
+import de.fhdo.lemma.data.ComplexTypeFeature
+import de.fhdo.lemma.data.DataField
+import org.eclipse.emf.common.util.Enumerator
+import org.eclipse.emf.common.util.EList
+import de.fhdo.lemma.cml_transformer.code_generators.DomainDataModelCodeGenerator
 
 /** 
  * LEMMA's model processing framework supports model-based structuring of code
@@ -79,8 +84,9 @@ import java.util.Enumeration
 		 */
 		var ContextMappingModel cmlModel = (getResource().getContents().get(0) as ContextMappingModel)
 		/* Instantiate Lemma DML by using a factory */
-		var LemmaDomainDataModelFactory factory = new LemmaDomainDataModelFactory()
-		var DataModel lemmaDataModel = factory.generateDataModel(cmlModel)
+		var LemmaDomainDataModelFactory factory = new LemmaDomainDataModelFactory(cmlModel)
+		var DataModel lemmaDataModel = factory.generateDataModel()
+		System.out.println(DomainDataModelCodeGenerator.printDataModel(lemmaDataModel))
 		/* Prepare the path of the generated file */
 		var String resultFilePath = '''«getTargetFolder()»«File::separator»results.txt'''.toString
 		var Map<String, String> resultMap = new HashMap()
@@ -88,39 +94,4 @@ import java.util.Enumeration
 		return withCharset(resultMap, StandardCharsets::UTF_8.name())
 	}
 
-	def private String renderDataModelContext(Context context) {
-		return '''
-			context «context.name» {	
-				«FOR structure : context.complexTypes»
-					 «structure.name» {
-						«FOR attr: structure.attributeList SEPARATOR ","»
-							«IF attr.comment !== null»// «attr.comment»«ENDIF»
-							«printLemmaAbstractAttribute(attr)»
-						«ENDFOR»
-					}					
-				«ENDFOR»
-				
-				«FOR list : context.lemmaListList»
-					«IF list.comment !== null»// «list.comment»«ENDIF»
-					list «list.name»List { «list.name» «list.name.toFirstLower().charAt(0)» }
-				«ENDFOR»
-			}
-		'''
-	}
-
-	def private dispatch String renderDataModelComplexType(DataStructure dataStructure) {
-	}
-
-	def private dispatch String renderDataModelComplexType(ListType listType) {
-	}
-
-	def private dispatch String renderDataModelComplexType(de.fhdo.lemma.data.Enumeration enumeration) {
-		return '''
-			enum «enumeration.name» {
-				«FOR enumField: enumeration.fields SEPARATOR ","»
-					«enumField.name»«IF enumField.initializationValue != null»(«enumField.initializationValue»)«ENDIF»
-				«ENDFOR»
-			}
-		'''
-	}
 }
