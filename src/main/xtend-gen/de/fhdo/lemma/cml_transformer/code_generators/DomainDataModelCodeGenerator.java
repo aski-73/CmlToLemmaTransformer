@@ -57,10 +57,9 @@ public class DomainDataModelCodeGenerator {
    * Generates LEMMA DML {@link DataStructure} (Value Objects, Entities etc.)
    */
   private static String _printDataModelComplexType(final DataStructure structure) {
-    int _size = structure.getOperations().size();
-    boolean setFieldOperationSeparator = (_size > 0);
+    boolean setFieldOperationSeparator = ((structure.getOperations().size() > 0) && (structure.getDataFields().size() > 0));
     StringConcatenation _builder = new StringConcatenation();
-    _builder.append("\t\t\t\t\t\t\t\t\t");
+    _builder.append("\t\t\t\t\t\t");
     _builder.newLine();
     _builder.append("structure ");
     String _name = structure.getName();
@@ -114,8 +113,8 @@ public class DomainDataModelCodeGenerator {
             _builder.append("procedure");
           } else {
             _builder.append("function ");
-            String _string = op.getPrimitiveOrComplexReturnType().toString();
-            _builder.append(_string, "\t");
+            String _determineConcreteType_1 = DomainDataModelCodeGenerator.determineConcreteType(op);
+            _builder.append(_determineConcreteType_1, "\t");
           }
         }
         _builder.append(" ");
@@ -123,8 +122,6 @@ public class DomainDataModelCodeGenerator {
         _builder.append(_name_2, "\t");
         _builder.append(" (");
         _builder.newLineIfNotEmpty();
-        _builder.append("\t");
-        _builder.append("\t");
         {
           EList<DataOperationParameter> _parameters = op.getParameters();
           boolean _hasElements_2 = false;
@@ -134,14 +131,16 @@ public class DomainDataModelCodeGenerator {
             } else {
               _builder.appendImmediate(",", "\t\t");
             }
-            String _determineConcreteType_1 = DomainDataModelCodeGenerator.determineConcreteType(param);
-            _builder.append(_determineConcreteType_1, "\t\t");
+            _builder.append("\t");
+            _builder.append("\t");
+            String _determineConcreteType_2 = DomainDataModelCodeGenerator.determineConcreteType(param);
+            _builder.append(_determineConcreteType_2, "\t\t");
             _builder.append(" ");
             String _name_3 = param.getName();
             _builder.append(_name_3, "\t\t");
+            _builder.newLineIfNotEmpty();
           }
         }
-        _builder.newLineIfNotEmpty();
         _builder.append("\t");
         _builder.append(")");
         _builder.newLine();
@@ -257,6 +256,30 @@ public class DomainDataModelCodeGenerator {
       boolean _notEquals_1 = (!Objects.equal(_primitiveType, null));
       if (_notEquals_1) {
         _xifexpression_1 = field.getPrimitiveType().getTypeName();
+      } else {
+        _xifexpression_1 = "notDetermined";
+      }
+      _xifexpression = _xifexpression_1;
+    }
+    return _xifexpression;
+  }
+  
+  /**
+   * Since {@link Type} has no general method to tell its concrete type we need helper methods.
+   * This one is for the return value of {@link DataOperation}
+   */
+  private static String determineConcreteType(final DataOperation op) {
+    String _xifexpression = null;
+    ComplexType _complexReturnType = op.getComplexReturnType();
+    boolean _notEquals = (!Objects.equal(_complexReturnType, null));
+    if (_notEquals) {
+      _xifexpression = op.getComplexReturnType().getName();
+    } else {
+      String _xifexpression_1 = null;
+      PrimitiveType _primitiveReturnType = op.getPrimitiveReturnType();
+      boolean _notEquals_1 = (!Objects.equal(_primitiveReturnType, null));
+      if (_notEquals_1) {
+        _xifexpression_1 = op.getPrimitiveReturnType().getTypeName();
       } else {
         _xifexpression_1 = "notDetermined";
       }

@@ -8,6 +8,7 @@ import de.fhdo.lemma.data.DataStructure
 import de.fhdo.lemma.data.Context
 import de.fhdo.lemma.data.DataModel
 import de.fhdo.lemma.data.DataOperationParameter
+import de.fhdo.lemma.data.DataOperation
 
 class DomainDataModelCodeGenerator {
 
@@ -36,21 +37,23 @@ class DomainDataModelCodeGenerator {
 	 */
 	def private static dispatch String printDataModelComplexType(DataStructure structure) {
 		// Set a separator between fields and operations if both exist 
-		var setFieldOperationSeparator = structure.operations.size > 0
-		
+		var setFieldOperationSeparator = structure.operations.size > 0 && structure.dataFields.size > 0
+
 		return '''
 			««« First generate the fields / attributes
 			««« Iteration over effectiveFileds not working ?
 			««« Then generate the operations
-			
+
 			structure «structure.name» «printFeatures(structure.features)» {
 				«FOR field : structure.dataFields SEPARATOR ","»
 					«field.determineConcreteType» «field.name» «printFeatures(field.features)»
 				«ENDFOR»
 				«IF setFieldOperationSeparator»,«ENDIF»
 				«FOR op : structure.operations SEPARATOR ","»
-					«IF op.hasNoReturnType»procedure«ELSE»function «op.primitiveOrComplexReturnType.toString»«ENDIF» «op.name» (
-						«FOR param: op.parameters SEPARATOR ","»«param.determineConcreteType» «param.name»«ENDFOR»
+					«IF op.hasNoReturnType»procedure«ELSE»function «op.determineConcreteType»«ENDIF» «op.name» (
+						«FOR param: op.parameters SEPARATOR ","»
+							«param.determineConcreteType» «param.name»
+						«ENDFOR»
 					)
 				«ENDFOR»
 			}
@@ -95,7 +98,17 @@ class DomainDataModelCodeGenerator {
 		return field.complexType != null ? field.complexType.name : (field.primitiveType != null ? field.primitiveType.
 			typeName : "notDetermined")
 	}
-	
+
+	/**
+	 * Since {@link Type} has no general method to tell its concrete type we need helper methods.
+	 * This one is for the return value of {@link DataOperation}
+	 */
+	def private static determineConcreteType(DataOperation op) {
+		return op.complexReturnType != null
+			? op.complexReturnType.name : (op.primitiveReturnType != null ? op.primitiveReturnType.
+			typeName : "notDetermined")
+	}
+
 	/**
 	 * Since {@link Type} has no general method to tell its concrete type we need helper methods.
 	 * This one is for {@link DataOperationParameter}
@@ -104,7 +117,7 @@ class DomainDataModelCodeGenerator {
 		return param.complexType != null ? param.complexType.name : (param.primitiveType != null ? param.primitiveType.
 			typeName : "notDetermined")
 	}
-	
+
 	/**
 	 * value_object => valueObject etc.
 	 */
@@ -113,7 +126,7 @@ class DomainDataModelCodeGenerator {
 		val newS = new StringBuilder()
 		var makeNextCharUpperCase = false
 		for (var i = 0; i < s.length; i++) {
-			if ((s.charAt(i) as byte)== 95) { // 95 == underscore
+			if ((s.charAt(i) as byte) == 95) { // 95 == underscore
 				makeNextCharUpperCase = true
 			} else {
 				if (makeNextCharUpperCase) {
@@ -122,10 +135,10 @@ class DomainDataModelCodeGenerator {
 				} else {
 					newS.append(s.charAt(i))
 				}
-				
+
 			}
 		}
-		
+
 		return newS.toString
 	}
 }

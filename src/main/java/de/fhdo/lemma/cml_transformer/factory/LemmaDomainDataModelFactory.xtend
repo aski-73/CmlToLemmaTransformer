@@ -30,6 +30,10 @@ import de.fhdo.lemma.data.PrimitiveFloat
 import de.fhdo.lemma.data.PrimitiveType
 import org.contextmapper.tactic.dsl.tacticdsl.Reference
 import de.fhdo.lemma.data.PrimitiveUnspecified
+import org.contextmapper.tactic.dsl.tacticdsl.Service
+import org.contextmapper.tactic.dsl.tacticdsl.ServiceOperation
+import de.fhdo.lemma.data.DataOperation
+import org.contextmapper.tactic.dsl.tacticdsl.DomainObjectOperation
 
 class LemmaDomainDataModelFactory {
 	static val DATA_FACTORY = DataFactory.eINSTANCE
@@ -88,14 +92,25 @@ class LemmaDomainDataModelFactory {
 
 		this.currentCtx = ctx;
 
-		bc.aggregates.forEach [ agg |
-			val dataStructures = mapAggregate2ComplexType(agg)
-			dataStructures.forEach [ struct |
-				// Tell the DataStructure in which context it is and visa versa
-				struct.context = ctx;
-				ctx.complexTypes.add(struct)
+		// Entities, Value Objects, Repositories, Domain Services, Aggregates
+		if (bc.aggregates != null) {
+			bc.aggregates.forEach [ agg |
+				val dataStructures = mapAggregate2ComplexType(agg)
+				dataStructures.forEach [ struct |
+					// Tell the DataStructure in which context it is and visa versa
+					struct.context = ctx;
+					ctx.complexTypes.add(struct)
+				]
 			]
-		]
+		}
+
+		// Application Service
+		if (bc.application !== null) { // Null-Safe Operator does not work ?
+			bc.application.services.forEach [ appService |
+				val lemmaAppService = mapServiceToComplexType(appService, false)
+				ctx.complexTypes.add(lemmaAppService)
+			]
+		}
 
 		return ctx
 	}
@@ -117,15 +132,13 @@ class LemmaDomainDataModelFactory {
 			dataStructures.add(lemmaStructure)
 		}
 
-		return dataStructures
+		// Creating domain services
+		for (service : agg.services) {
+			val lemmaDomainService = mapServiceToComplexType(service, true)
+			dataStructures.add(lemmaDomainService)
+		}
 
-//		// Creating domain services
-//		for (service : agg.services) {
-//			val domainService = new LemmaStructure(service.name, "structure", "domainService")
-//			domainService.attributeList.addAll(processDomainServiceOperations(service, listsToGenerate))
-//
-//			lemmaContext.structureList.add(domainService)
-//		}
+		return dataStructures
 	}
 
 	/**
@@ -192,35 +205,10 @@ class LemmaDomainDataModelFactory {
 
 			lemmaStructure.dataFields.add(field)
 		]
-		
-		
+
 		// Add DataOperations
 		obj.operations.forEach([ op |
-			val lemmaOp = DATA_FACTORY.createDataOperation
-			lemmaOp.name = op.name
-			if (op.returnType === null) {
-				lemmaOp.hasNoReturnType = true
-			} else { // Set ReturnType
-				if (op.returnType.domainObjectType != null) {
-					lemmaOp.complexReturnType = mapReferenceType(op.returnType.domainObjectType)
-				} else {
-					lemmaOp.primitiveReturnType = mapPrimitiveType(op.returnType.type)
-				}
-			}
-			
-			
-			
-			// Add DataOperationParameters
-			op.parameters.forEach([ param |
-				val lemmaParam = DATA_FACTORY.createDataOperationParameter
-				lemmaParam.name = param.name
-				if (param.parameterType.domainObjectType !== null) { // Complex Type
-					lemmaParam.complexType = mapReferenceType(param.parameterType.domainObjectType)
-				} else { // Primitive Type
-					lemmaParam.primitiveType = mapPrimitiveType(param.parameterType.type)
-				}
-				lemmaOp.parameters.add(lemmaParam)
-			])
+			val lemmaOp = mapServiceOperationToDataOperation(op)
 			lemmaStructure.operations.add(lemmaOp)
 		])
 
@@ -242,29 +230,89 @@ class LemmaDomainDataModelFactory {
 	}
 
 	/**
-	 * Create a new LEMMA DataModel from the given EObject instances
+	 * Maps CML {@link ServiceOperation} to LEMMA DML {@link DataOperation}
 	 */
-	private def DataModel createDataModel(List<EObject> eObjects) {
-		val dataModel = DATA_FACTORY.createDataModel
-//        val versions = <String, Version>newLinkedHashMap
-//        val contexts = <String, Context>newLinkedHashMap
-//        val complexTypes = <String, ComplexType>newLinkedHashMap
-//
-//        eObjects.forEach[
-//            switch(it) {
-//                Version: versions.put(it.name, it)
-//                Context: contexts.put(qualifiedName(it), it)
-//                ComplexType: complexTypes.put(qualifiedName(it), it)
-//            }
-//        ]
-//
-//        if (!versions.empty)
-//            dataModel.versions.addAll(versions.values)
-//        else if (!contexts.empty)
-//            dataModel.contexts.addAll(contexts.values)
-//        else
-//            dataModel.complexTypes.addAll(complexTypes.values)
-		return dataModel
+	private def DataOperation mapServiceOperationToDataOperation(ServiceOperation cmlOp) {
+		val lemmaOp = DATA_FACTORY.createDataOperation
+		lemmaOp.name = cmlOp.name
+
+		if (cmlOp.returnType === null) {
+			lemmaOp.hasNoReturnType = true
+		} else { // Set ReturnType
+			if (cmlOp.returnType.domainObjectType != null) {
+				lemmaOp.complexReturnType = mapReferenceType(cmlOp.returnType.domainObjectType)
+			} else {
+				lemmaOp.primitiveReturnType = mapPrimitiveType(cmlOp.returnType.type)
+			}
+		}
+
+		// Add DataOperationParameters
+		cmlOp.parameters.forEach([ param |
+			val lemmaParam = DATA_FACTORY.createDataOperationParameter
+			lemmaParam.name = param.name
+			if (param.parameterType.domainObjectType !== null) { // Complex Type
+				lemmaParam.complexType = mapReferenceType(param.parameterType.domainObjectType)
+			} else { // Primitive Type
+				lemmaParam.primitiveType = mapPrimitiveType(param.parameterType.type)
+			}
+			lemmaOp.parameters.add(lemmaParam)
+		])
+
+		return lemmaOp
+	}
+
+	/**
+	 * Maps CML {@link DomainObjectOperation} to LEMMA DML {@link DataOperation}
+	 */
+	private def DataOperation mapServiceOperationToDataOperation(DomainObjectOperation cmlOp) {
+		val lemmaOp = DATA_FACTORY.createDataOperation
+		lemmaOp.name = cmlOp.name
+
+		if (cmlOp.returnType === null) {
+			lemmaOp.hasNoReturnType = true
+		} else { // Set ReturnType
+			if (cmlOp.returnType.domainObjectType != null) {
+				lemmaOp.complexReturnType = mapReferenceType(cmlOp.returnType.domainObjectType)
+			} else {
+				lemmaOp.primitiveReturnType = mapPrimitiveType(cmlOp.returnType.type)
+			}
+		}
+
+		// Add DataOperationParameters
+		cmlOp.parameters.forEach([ param |
+			val lemmaParam = DATA_FACTORY.createDataOperationParameter
+			lemmaParam.name = param.name
+			if (param.parameterType.domainObjectType !== null) { // Complex Type
+				lemmaParam.complexType = mapReferenceType(param.parameterType.domainObjectType)
+			} else { // Primitive Type
+				lemmaParam.primitiveType = mapPrimitiveType(param.parameterType.type)
+			}
+			lemmaOp.parameters.add(lemmaParam)
+		])
+
+		return lemmaOp
+	}
+
+	/**
+	 * Maps CML {@link Service} to LEMMA DML {@link ComplexType}
+	 * 
+	 * @param domainService true: map to LEMMA DML Domain Service. False: Map to LEMMA DML Application Service
+	 */
+	private def ComplexType mapServiceToComplexType(Service cmlDomainService, boolean domainService) {
+		val lemmaDomainService = DATA_FACTORY.createDataStructure
+		lemmaDomainService.name = cmlDomainService.name
+		if (domainService) {
+			lemmaDomainService.features.add(ComplexTypeFeature.DOMAIN_SERVICE)
+		} else {
+			lemmaDomainService.features.add(ComplexTypeFeature.APPLICATION_SERVICE)
+		}
+
+		cmlDomainService.operations.forEach [ cmlOp |
+			val lemmaOp = mapServiceOperationToDataOperation(cmlOp)
+			lemmaDomainService.operations.add(lemmaOp)
+		]
+
+		return lemmaDomainService
 	}
 
 	/**
