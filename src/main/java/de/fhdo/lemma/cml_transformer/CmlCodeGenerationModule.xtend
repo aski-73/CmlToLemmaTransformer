@@ -1,42 +1,25 @@
 package de.fhdo.lemma.cml_transformer
 
+import de.fhdo.lemma.cml_transformer.code_generators.DomainDataModelCodeGenerator
 import de.fhdo.lemma.cml_transformer.factory.LemmaDomainDataModelFactory
 import de.fhdo.lemma.data.DataModel
-import de.fhdo.lemma.model_processing.UtilKt
+import de.fhdo.lemma.data.datadsl.extractor.DataDslExtractor
 import de.fhdo.lemma.model_processing.annotations.CodeGenerationModule
 import de.fhdo.lemma.model_processing.builtin_phases.code_generation.AbstractCodeGenerationModule
-import de.fhdo.lemma.service.intermediate.IntermediateInterface
-import de.fhdo.lemma.service.intermediate.IntermediateMicroservice
-import de.fhdo.lemma.service.intermediate.IntermediateOperation
-import de.fhdo.lemma.service.intermediate.IntermediatePackage
-import de.fhdo.lemma.service.intermediate.IntermediateParameter
-import de.fhdo.lemma.service.intermediate.IntermediateServiceModel
+import java.io.File
+import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
+import java.util.HashMap
+import java.util.Map
 import kotlin.Pair
 import org.contextmapper.dsl.contextMappingDSL.ContextMappingDSLPackage
 import org.contextmapper.dsl.contextMappingDSL.ContextMappingModel
 import org.jetbrains.annotations.NotNull
-import java.io.File
-import java.nio.charset.Charset
-import java.nio.charset.StandardCharsets
-import java.util.Collection
-import java.util.HashMap
-import java.util.List
-import java.util.Map
-import java.util.stream.Collectors
-import de.fhdo.lemma.data.Context
-import de.fhdo.lemma.data.DataStructure
-import de.fhdo.lemma.data.ListType
-import java.util.Enumeration
-import de.fhdo.lemma.data.ComplexTypeFeature
-import de.fhdo.lemma.data.DataField
-import org.eclipse.emf.common.util.Enumerator
-import org.eclipse.emf.common.util.EList
-import de.fhdo.lemma.cml_transformer.code_generators.DomainDataModelCodeGenerator
 
 /** 
  * LEMMA's model processing framework supports model-based structuring of code
  * generators. This class implements a code generation module as expected by the
- * framework, i.e., the class receives the{@link de.fhdo.lemma.model_processing.annotations.CodeGenerationModule}annotation and extends{@link de.fhdo.lemma.model_processing.builtin_phases.code_generation.AbstractCodeGenerationModule}.
+ * framework, i.e., the class receives the{@link CodeGenerationModule}annotation and extends{@link AbstractCodeGenerationModule}.
  */
 @CodeGenerationModule(name="main") class CmlCodeGenerationModule extends AbstractCodeGenerationModule {
 	/** 
@@ -53,12 +36,12 @@ import de.fhdo.lemma.cml_transformer.code_generators.DomainDataModelCodeGenerato
 	 * this simple implementation uses simple Java {@link String}s to store the
 	 * generated code. However, you may use any mechanism to facilitate code
 	 * generation, e.g., template engines. The only requirement posed by LEMMA's
-	 * model processing framework is that the{@link de.fhdo.lemma.model_processing.builtin_phases.code_generation.AbstractCodeGenerationModule#execute(String[], String[])}implementation of a code generation module returns a map with entries as
+	 * model processing framework is that the{@link AbstractCodeGenerationModule#execute(String[], String[])}implementation of a code generation module returns a map with entries as
 	 * follows: - Key: Path of a generated file. By default, the file must reside in
 	 * the folder passed to the model processor in the "--target_model" commandline
-	 * option (see below). - Value: A {@link kotlin.Pair} instance, whose first
+	 * option (see below). - Value: A {@link Pair} instance, whose first
 	 * component contains the generated file's content and whose second component
-	 * identifies the content's {@link java.nio.charset.Charset}. From the map
+	 * identifies the content's {@link Charset}. From the map
 	 * entries, LEMMA's code generation framework will write the generated files to
 	 * the filesystem of the model processor user.
 	 * The method generates a file called "results.txt" in the given target folder
@@ -86,7 +69,9 @@ import de.fhdo.lemma.cml_transformer.code_generators.DomainDataModelCodeGenerato
 		/* Instantiate Lemma DML by using a factory */
 		var LemmaDomainDataModelFactory factory = new LemmaDomainDataModelFactory(cmlModel)
 		var DataModel lemmaDataModel = factory.generateDataModel()
-		System.out.println(DomainDataModelCodeGenerator.printDataModel(lemmaDataModel))
+		// System.out.println(DomainDataModelCodeGenerator.printDataModel(lemmaDataModel))
+		val dataExtractor = new DataDslExtractor()
+		System.out.println(dataExtractor.extractToString(lemmaDataModel))
 		/* Prepare the path of the generated file */
 		var String resultFilePath = '''«getTargetFolder()»«File::separator»results.txt'''.toString
 		var Map<String, String> resultMap = new HashMap()
