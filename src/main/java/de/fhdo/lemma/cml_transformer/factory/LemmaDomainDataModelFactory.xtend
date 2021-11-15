@@ -37,6 +37,7 @@ import org.contextmapper.tactic.dsl.tacticdsl.DomainObjectOperation
 import org.contextmapper.tactic.dsl.tacticdsl.CollectionType
 import de.fhdo.lemma.data.DataField
 import org.contextmapper.tactic.dsl.tacticdsl.Attribute
+import de.fhdo.lemma.data.DataFieldFeature
 
 class LemmaDomainDataModelFactory {
 	static val DATA_FACTORY = DataFactory.eINSTANCE
@@ -243,7 +244,7 @@ class LemmaDomainDataModelFactory {
 		if (cmlOp.returnType === null) {
 			lemmaOp.hasNoReturnType = true
 		} else { // Set ReturnType
-			if (cmlOp.returnType.collectionType === CollectionType.LIST || cmlOp.returnType.domainObjectType !== null) {  // Complex Type
+			if (cmlOp.returnType.collectionType === CollectionType.LIST || cmlOp.returnType.domainObjectType !== null) { // Complex Type
 				lemmaOp.complexReturnType = mapComplexTypes(cmlOp.returnType)
 			} else {
 				lemmaOp.primitiveReturnType = mapPrimitiveType(cmlOp.returnType.type)
@@ -254,7 +255,8 @@ class LemmaDomainDataModelFactory {
 		cmlOp.parameters.forEach([ param |
 			val lemmaParam = DATA_FACTORY.createDataOperationParameter
 			lemmaParam.name = param.name
-			if (param.parameterType.collectionType === CollectionType.LIST || param.parameterType.domainObjectType !== null) { // Complex Type
+			if (param.parameterType.collectionType === CollectionType.LIST ||
+				param.parameterType.domainObjectType !== null) { // Complex Type
 				lemmaParam.complexType = mapComplexTypes(param.parameterType)
 			} else { // Primitive Type
 				lemmaParam.primitiveType = mapPrimitiveType(param.parameterType.type)
@@ -405,6 +407,10 @@ class LemmaDomainDataModelFactory {
 			// field type (primitive)
 			field.primitiveType = primitiveType
 		}
+
+		if (attr.key) {
+			field.features.add(DataFieldFeature.IDENTIFIER)
+		}
 	}
 
 	/**
@@ -413,16 +419,23 @@ class LemmaDomainDataModelFactory {
 	 * created if not existed yet)
 	 */
 	private def mapReferenceTypeToComplexType(Reference ref, DataField field) {
-		val complexType = findComplexTypeBySimpleDomainObject(ref.domainObjectType)
+		var complexType = findComplexTypeBySimpleDomainObject(ref.domainObjectType)
 
 		// If a list is used in CML then an extra list type must be generated for LEMMA DML
 		if (ref.collectionType.equals(CollectionType.LIST)) {
 			val list = complexType.createListTypeIfNotExisting
 			this.listsToGenerate.add(list)
-			return list
-		} else {
-			return complexType
+			complexType = list
 		}
+
+		if (ref.key) {
+			field.features.add(DataFieldFeature.IDENTIFIER)
+		}
+		
+		// Complex Types are always a part of the aggregate
+		field.features.add(DataFieldFeature.PART)
+		
+		return complexType
 	}
 
 	/**
@@ -487,11 +500,11 @@ class LemmaDomainDataModelFactory {
 				val lemmaPrimitiveType = mapPrimitiveType(cmlComplexType.type)
 				list = lemmaPrimitiveType.createListTypeIfNotExisting
 			}
-		
+
 			this.listsToGenerate.add(list)
 			return list
 		} else { // Not a list
-			// Check if already mapped
+		// Check if already mapped
 			val lemmaComplexType = findComplexTypeBySimpleDomainObject(cmlComplexType.domainObjectType)
 			for (cType : this.dataModel.complexTypes) {
 				if (cType.name.equals(lemmaComplexType.name))

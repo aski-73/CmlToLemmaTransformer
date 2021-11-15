@@ -6,6 +6,7 @@ import de.fhdo.lemma.data.ComplexTypeFeature;
 import de.fhdo.lemma.data.Context;
 import de.fhdo.lemma.data.DataFactory;
 import de.fhdo.lemma.data.DataField;
+import de.fhdo.lemma.data.DataFieldFeature;
 import de.fhdo.lemma.data.DataModel;
 import de.fhdo.lemma.data.DataOperation;
 import de.fhdo.lemma.data.DataOperationParameter;
@@ -237,7 +238,8 @@ public class LemmaDomainDataModelFactory {
     final Consumer<Parameter> _function = (Parameter param) -> {
       final DataOperationParameter lemmaParam = LemmaDomainDataModelFactory.DATA_FACTORY.createDataOperationParameter();
       lemmaParam.setName(param.getName());
-      if (((param.getParameterType().getCollectionType() == CollectionType.LIST) || (param.getParameterType().getDomainObjectType() != null))) {
+      if (((param.getParameterType().getCollectionType() == CollectionType.LIST) || 
+        (param.getParameterType().getDomainObjectType() != null))) {
         lemmaParam.setComplexType(this.mapComplexTypes(param.getParameterType()));
       } else {
         lemmaParam.setPrimitiveType(this.mapPrimitiveType(param.getParameterType().getType()));
@@ -372,26 +374,26 @@ public class LemmaDomainDataModelFactory {
    * {@link DataField}. If the {@link Attribute} has a List {@link CollectionType} a {@link ListType} will be assigned instead (and
    * created if not existed yet)
    */
-  private Boolean mapAttributeTypeToPrimitiveTypeAndAssignItToDataField(final Attribute attr, final DataField field) {
+  private boolean mapAttributeTypeToPrimitiveTypeAndAssignItToDataField(final Attribute attr, final DataField field) {
     boolean _xblockexpression = false;
     {
       final PrimitiveType primitiveType = this.mapPrimitiveType(attr.getType());
-      boolean _xifexpression = false;
       boolean _equals = attr.getCollectionType().equals(CollectionType.LIST);
       if (_equals) {
-        boolean _xblockexpression_1 = false;
-        {
-          final ListType list = this.createListTypeIfNotExisting(primitiveType);
-          field.setComplexType(list);
-          _xblockexpression_1 = this.listsToGenerate.add(list);
-        }
-        _xifexpression = _xblockexpression_1;
+        final ListType list = this.createListTypeIfNotExisting(primitiveType);
+        field.setComplexType(list);
+        this.listsToGenerate.add(list);
       } else {
         field.setPrimitiveType(primitiveType);
       }
+      boolean _xifexpression = false;
+      boolean _isKey = attr.isKey();
+      if (_isKey) {
+        _xifexpression = field.getFeatures().add(DataFieldFeature.IDENTIFIER);
+      }
       _xblockexpression = _xifexpression;
     }
-    return Boolean.valueOf(_xblockexpression);
+    return _xblockexpression;
   }
   
   /**
@@ -400,15 +402,19 @@ public class LemmaDomainDataModelFactory {
    * created if not existed yet)
    */
   private ComplexType mapReferenceTypeToComplexType(final Reference ref, final DataField field) {
-    final ComplexType complexType = this.findComplexTypeBySimpleDomainObject(ref.getDomainObjectType());
+    ComplexType complexType = this.findComplexTypeBySimpleDomainObject(ref.getDomainObjectType());
     boolean _equals = ref.getCollectionType().equals(CollectionType.LIST);
     if (_equals) {
       final ListType list = this.createListTypeIfNotExisting(complexType);
       this.listsToGenerate.add(list);
-      return list;
-    } else {
-      return complexType;
+      complexType = list;
     }
+    boolean _isKey = ref.isKey();
+    if (_isKey) {
+      field.getFeatures().add(DataFieldFeature.IDENTIFIER);
+    }
+    field.getFeatures().add(DataFieldFeature.PART);
+    return complexType;
   }
   
   /**
