@@ -65,7 +65,7 @@ class DomainDataModelCodeGenerator {
 	 */
 	def private static dispatch String printDataModelComplexType(ListType listType) {
 		return '''
-			list «listType.name»List { «listType.name» «listType.name.toFirstLower().charAt(0)» }
+			list «listType.name» { «FOR field: listType.dataFields SEPARATOR ","» «field.determineConcreteType» «field.name» «ENDFOR» }
 		'''
 	}
 

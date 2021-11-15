@@ -18,7 +18,6 @@ import java.util.function.Consumer;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.common.util.Enumerator;
 import org.eclipse.xtend2.lib.StringConcatenation;
-import org.eclipse.xtext.xbase.lib.StringExtensions;
 
 @SuppressWarnings("all")
 public class DomainDataModelCodeGenerator {
@@ -159,12 +158,25 @@ public class DomainDataModelCodeGenerator {
     _builder.append("list ");
     String _name = listType.getName();
     _builder.append(_name);
-    _builder.append("List { ");
-    String _name_1 = listType.getName();
-    _builder.append(_name_1);
-    _builder.append(" ");
-    char _charAt = StringExtensions.toFirstLower(listType.getName()).charAt(0);
-    _builder.append(_charAt);
+    _builder.append(" { ");
+    {
+      EList<DataField> _dataFields = listType.getDataFields();
+      boolean _hasElements = false;
+      for(final DataField field : _dataFields) {
+        if (!_hasElements) {
+          _hasElements = true;
+        } else {
+          _builder.appendImmediate(",", "");
+        }
+        _builder.append(" ");
+        String _determineConcreteType = DomainDataModelCodeGenerator.determineConcreteType(field);
+        _builder.append(_determineConcreteType);
+        _builder.append(" ");
+        String _name_1 = field.getName();
+        _builder.append(_name_1);
+        _builder.append(" ");
+      }
+    }
     _builder.append(" }");
     _builder.newLineIfNotEmpty();
     return _builder.toString();
