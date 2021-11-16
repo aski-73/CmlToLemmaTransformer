@@ -1,6 +1,7 @@
 package de.fhdo.lemma.cml_transformer.factory;
 
 import com.google.common.base.Objects;
+import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceDomainDataModelGenerator;
 import de.fhdo.lemma.data.ComplexType;
 import de.fhdo.lemma.data.ComplexTypeFeature;
 import de.fhdo.lemma.data.Context;
@@ -13,6 +14,7 @@ import de.fhdo.lemma.data.DataOperationParameter;
 import de.fhdo.lemma.data.DataStructure;
 import de.fhdo.lemma.data.Enumeration;
 import de.fhdo.lemma.data.EnumerationField;
+import de.fhdo.lemma.data.ImportedComplexType;
 import de.fhdo.lemma.data.ListType;
 import de.fhdo.lemma.data.PrimitiveType;
 import java.util.Arrays;
@@ -22,6 +24,7 @@ import java.util.function.Consumer;
 import org.contextmapper.dsl.contextMappingDSL.Aggregate;
 import org.contextmapper.dsl.contextMappingDSL.Application;
 import org.contextmapper.dsl.contextMappingDSL.BoundedContext;
+import org.contextmapper.dsl.contextMappingDSL.ContextMap;
 import org.contextmapper.dsl.contextMappingDSL.ContextMappingModel;
 import org.contextmapper.tactic.dsl.tacticdsl.Attribute;
 import org.contextmapper.tactic.dsl.tacticdsl.CollectionType;
@@ -45,6 +48,52 @@ import org.eclipse.xtext.xbase.lib.StringExtensions;
 @SuppressWarnings("all")
 public class LemmaDomainDataModelFactory {
   private static final DataFactory DATA_FACTORY = DataFactory.eINSTANCE;
+  
+  public static DataOperation clone(final DataOperation operation) {
+    final DataOperation clonedOperation = LemmaDomainDataModelFactory.DATA_FACTORY.createDataOperation();
+    clonedOperation.setName(operation.getName());
+    EList<DataOperationParameter> _parameters = operation.getParameters();
+    for (final DataOperationParameter opParam : _parameters) {
+      clonedOperation.getParameters().add(LemmaDomainDataModelFactory.clone(opParam));
+    }
+    boolean _isHasNoReturnType = operation.isHasNoReturnType();
+    boolean _not = (!_isHasNoReturnType);
+    if (_not) {
+      ComplexType _complexReturnType = operation.getComplexReturnType();
+      boolean _tripleNotEquals = (_complexReturnType != null);
+      if (_tripleNotEquals) {
+        clonedOperation.setComplexReturnType(operation.getComplexReturnType());
+      } else {
+        ImportedComplexType _importedComplexReturnType = operation.getImportedComplexReturnType();
+        boolean _tripleNotEquals_1 = (_importedComplexReturnType != null);
+        if (_tripleNotEquals_1) {
+          clonedOperation.setImportedComplexReturnType(operation.getImportedComplexReturnType());
+        } else {
+          clonedOperation.setPrimitiveReturnType(operation.getPrimitiveReturnType());
+        }
+      }
+    }
+    return clonedOperation;
+  }
+  
+  public static DataOperationParameter clone(final DataOperationParameter param) {
+    final DataOperationParameter clonedParam = LemmaDomainDataModelFactory.DATA_FACTORY.createDataOperationParameter();
+    clonedParam.setName(param.getName());
+    ComplexType _complexType = param.getComplexType();
+    boolean _tripleNotEquals = (_complexType != null);
+    if (_tripleNotEquals) {
+      clonedParam.setComplexType(param.getComplexType());
+    } else {
+      ImportedComplexType _importedComplexType = param.getImportedComplexType();
+      boolean _tripleNotEquals_1 = (_importedComplexType != null);
+      if (_tripleNotEquals_1) {
+        clonedParam.setImportedComplexType(param.getImportedComplexType());
+      } else {
+        clonedParam.setPrimitiveType(param.getPrimitiveType());
+      }
+    }
+    return clonedParam;
+  }
   
   /**
    * Input Model (CML)
@@ -84,6 +133,14 @@ public class LemmaDomainDataModelFactory {
       this.dataModel.getContexts().add(ctx);
     };
     this.cmlModel.getBoundedContexts().forEach(_function);
+    EList<Context> _contexts = this.dataModel.getContexts();
+    for (final Context ctx : _contexts) {
+      {
+        ContextMap _map = this.cmlModel.getMap();
+        final OpenHostServiceDomainDataModelGenerator ohsGenerator = new OpenHostServiceDomainDataModelGenerator(ctx, this.dataModel, _map);
+        ohsGenerator.mapOhsDownstream();
+      }
+    }
     return this.dataModel;
   }
   
@@ -204,6 +261,7 @@ public class LemmaDomainDataModelFactory {
     final Consumer<DomainObjectOperation> _function_2 = (DomainObjectOperation op) -> {
       final DataOperation lemmaOp = this.mapDomainObjectOperationToDataOperation(op);
       lemmaStructure.getOperations().add(lemmaOp);
+      lemmaOp.setDataStructure(lemmaStructure);
     };
     obj.getOperations().forEach(_function_2);
     return lemmaStructure;

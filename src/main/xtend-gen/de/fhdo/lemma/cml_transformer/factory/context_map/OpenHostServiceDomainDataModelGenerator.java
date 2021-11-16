@@ -1,14 +1,11 @@
-package de.fhdo.lemma.cml_transformer.factory;
+package de.fhdo.lemma.cml_transformer.factory.context_map;
 
 import de.fhdo.lemma.data.ComplexType;
 import de.fhdo.lemma.data.ComplexTypeFeature;
 import de.fhdo.lemma.data.Context;
 import de.fhdo.lemma.data.DataFactory;
 import de.fhdo.lemma.data.DataModel;
-import de.fhdo.lemma.data.DataOperation;
-import de.fhdo.lemma.data.DataOperationParameter;
 import de.fhdo.lemma.data.DataStructure;
-import de.fhdo.lemma.data.PrimitiveType;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -106,30 +103,7 @@ public class OpenHostServiceDomainDataModelGenerator {
     final DataStructure accessor = OpenHostServiceDomainDataModelGenerator.DATA_FACTORY.createDataStructure();
     accessor.setName(appService.getName().replace("Api", "Accessor"));
     accessor.getFeatures().add(ComplexTypeFeature.APPLICATION_SERVICE);
-    final Consumer<DataOperation> _function = (DataOperation appServiceOp) -> {
-      final Predicate<DataOperationParameter> _function_1 = (DataOperationParameter param) -> {
-        return ((param.getComplexType() != null) && param.getName().contains("Dto"));
-      };
-      final Optional<DataOperationParameter> dto = appServiceOp.getParameters().stream().filter(_function_1).findFirst();
-      boolean _isPresent = dto.isPresent();
-      if (_isPresent) {
-        accessor.getOperations().add(appServiceOp);
-        this.context.getComplexTypes().add(dto.get().getComplexType());
-      } else {
-        final Predicate<DataOperationParameter> _function_2 = (DataOperationParameter param) -> {
-          PrimitiveType _primitiveType = param.getPrimitiveType();
-          return (_primitiveType != null);
-        };
-        final List<DataOperationParameter> primitives = appServiceOp.getParameters().stream().filter(_function_2).collect(Collectors.<DataOperationParameter>toList());
-        int _size = primitives.size();
-        int _size_1 = appServiceOp.getParameters().size();
-        boolean _equals = (_size == _size_1);
-        if (_equals) {
-          accessor.getOperations().add(appServiceOp);
-        }
-      }
-    };
-    appService.getOperations().forEach(_function);
+    accessor.getOperations().addAll(appService.getOperations());
     return accessor;
   }
   

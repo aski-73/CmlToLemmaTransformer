@@ -1,0 +1,12 @@
+technology Rest {
+	protocols {
+		sync rest data formats "application/json"; 
+	}
+	
+	service aspects {
+		aspect GET <singleval> for operations;
+		aspect POST <singleval> for operations;
+		aspect PUT <singleval> for operations;
+		aspect DELETE <singleval> for operations;
+	}
+}

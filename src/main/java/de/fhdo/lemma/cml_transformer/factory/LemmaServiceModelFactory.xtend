@@ -8,6 +8,7 @@ import de.fhdo.lemma.service.MicroserviceType
 import de.fhdo.lemma.service.Visibility
 import org.contextmapper.dsl.contextMappingDSL.ContextMap
 import de.fhdo.lemma.data.Context
+import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceServiceModelGenerator
 
 /**
  * Creates for every {@link Context} defined in LEMMA {@link DataModel} a Microservice will be generated. 

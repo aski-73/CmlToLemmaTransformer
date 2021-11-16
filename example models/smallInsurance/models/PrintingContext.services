@@ -1,0 +1,18 @@
+import datatypes from "PrintingContext.data" as domain
+import technology from "../technology/rest.technology" as Rest
+
+/**
+ * OHS
+ */
+@technology(Rest)
+@sync(Rest::_protocols.rest)
+public utility microservice de.fhdoMaster.fe.smallInsureance.PrintingContextService {
+	interface PrintingApi {
+		@endpoints(Rest::_protocols.rest:"/print";) 
+		@Rest::_aspects.POST
+		postPrintingJob(sync in issuer: string, sync in d: domain::PrintingContext.Document, sync out id: int);
+		@endpoints(Rest::_protocols.rest:"/print";) 
+		@Rest::_aspects.DELETE	
+		deletePrintingJob(sync in id: int);
+	}
+}

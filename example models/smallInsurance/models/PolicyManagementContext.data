@@ -1,0 +1,63 @@
+/**
+ * Downstream-Rolle (Conformist)
+ */
+context PolicyManagementContext {
+
+	list Products { Product p }
+	
+	list Addresses { Address a }
+	
+	list IntegerList { int id }
+	
+	// Aggreagte Contract
+			
+	structure ContractService<domainService> {
+		procedure createContract(IntegerList ids, int customerId)
+	}
+
+	structure Contract<aggregate, entity> {
+		int id <identifier>,
+		Products products,
+		// Als Conformist kennt das PolicyManagement "Customer"
+		Customer client
+	}
+	
+	structure Product<aggregate, entity> {
+		int id <identifier>,
+		string productName
+	}
+	
+	// Conformist
+	
+	structure Customer<aggregate, entity> {
+		int id <identifier>,
+		string firstname,
+		string lastname,
+		Addresses addresses
+	}
+	
+	structure Address<valueObject> {
+  		string street,
+    	string city
+	}
+	
+	// OHS Downstream
+	
+	structure CustomerAccessor<applicationService> {
+		procedure createCustomer(CustomerDto c),
+		function CustomerDto readCustomer(int id),
+		procedure updateCustomer(int id, CustomerDto c),
+		procedure deleteCustomer(int id)
+	}
+	
+	structure CustomerDto<valueObject> {
+		string firstname,
+		string lastname,
+		Addresses addresses
+	}
+	
+	structure AddressDto<valueObject> {
+  		string street,
+    	string city
+	}
+}

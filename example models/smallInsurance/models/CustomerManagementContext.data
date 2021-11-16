@@ -1,0 +1,86 @@
+/**
+ * Downstream-Rolle (ACL)
+ * Wandelt das öffentliche Modell des Upstreams in ein für sich geeignetes Modell um.
+ */
+context CustomerManagementContext {
+	// Aggregate Customers
+	
+	list Addresses { Address a }
+	
+	// Der "Inhalt" eines Aggregate (CML) wird in LEMMA übersetzt.
+	structure Customer<aggregate, entity> {
+		int id <identifier>,
+		string firstname,
+		string lastname,
+		Addresses addresses
+	}
+	
+	structure Address<valueObject> {
+  		string street,
+    	string city
+	}
+	
+	// Domänenservices von Customer (in CML innerhalb eines Aggregates)
+	structure CustomerService<domainService> {
+		function Customer createCustomer(string firstname, string lastname, Addresses addresses),
+		procedure deleteCustomer(int customerId)
+	}
+	
+	// auto generated (CustomerManagementContext ist eine ACL. Dieser erhält eine Factory
+	// mit der das Domänenmodell des Upstreams auf das eigene angepasst wird)
+	structure PrintingJobTranslator<factory> {
+		function CustomerData translatePrintingJobToCustomerData()
+	}
+	
+	structure PrintingAccessor<applicationService> {
+		function int createPrintingJob(PrintingJobDto2 printingJob),
+		procedure deletePrintingJob(int id)
+	}
+	
+	// (Der Application Service von CustomerManagementContext bräuchte Zugriff auf Domänenobjete
+	// aus dem Printing-Kontext. Jedoch darf ein Kontext nicht einfach auf Domänenobjekte eines 
+	// anderen Kontexts zugreifen. Daher werden die für den Application Service benötigten
+	// Domänenobjekte zusätzlich hier generiert. Jedoch nicht als Entity, sondern als Value Object)
+	// => wird nicht mehr gemacht, da die domänenobjekte noch Methoden. Der CmlTransformer kann hier
+	// keine Entscheidung treffen was benötigt wird und was nicht.
+	
+	structure PrintingJobDto2<valueObject> {
+		int printingId,
+		string issuerName,
+		DocumentDto2 document
+	}
+	
+	structure DocumentDto2 <valueObject> {
+		string documentName
+	}
+	
+		
+	// Aggregate CustomerData
+	
+	/**
+	 * Der Translator wandelt die Daten des PrintingContexts in ein CustomerData um
+	 */
+	structure CustomerData<aggregate, entity> {
+		string someData
+	}
+	
+	// Automatisch generiert da ein OHS
+	
+	structure CustomerApi<applicationService> {
+		procedure createCustomer(CustomerDto c),
+		function CustomerDto readCustomer(int id),
+		procedure updateCustomer(int id, CustomerDto c),
+		procedure deleteCustomer(int id)
+	}
+		
+	structure CustomerDto<valueObject> {
+		string firstname,
+		string lastname,
+		Addresses addresses
+	}
+	
+	structure AddressDto<valueObject> {
+  		string street,
+    	string city
+	}
+}

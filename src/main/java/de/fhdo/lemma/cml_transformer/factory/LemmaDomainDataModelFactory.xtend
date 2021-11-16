@@ -28,12 +28,47 @@ import org.contextmapper.tactic.dsl.tacticdsl.Service
 import org.contextmapper.tactic.dsl.tacticdsl.ServiceOperation
 import org.contextmapper.tactic.dsl.tacticdsl.SimpleDomainObject
 import org.contextmapper.tactic.dsl.tacticdsl.ValueObject
+import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceDomainDataModelGenerator
+import de.fhdo.lemma.data.DataOperationParameter
 
 /**
  * Model transformation from ContextMapper DSL (CML) to LEMMA Domain Data Modeling Language (DML)
  */
 class LemmaDomainDataModelFactory {
 	static val DATA_FACTORY = DataFactory.eINSTANCE
+
+	static def clone(DataOperation operation) {
+		val clonedOperation = DATA_FACTORY.createDataOperation
+		clonedOperation.name = operation.name
+		for (opParam : operation.parameters) {
+			clonedOperation.parameters.add(opParam.clone)
+		}
+
+		if (!operation.hasNoReturnType) {
+			if (operation.complexReturnType !== null) {
+				clonedOperation.complexReturnType = operation.complexReturnType
+			} else if (operation.importedComplexReturnType !== null) {
+				clonedOperation.importedComplexReturnType = operation.importedComplexReturnType
+			} else {
+				clonedOperation.primitiveReturnType = operation.primitiveReturnType
+			}
+		}
+
+		return clonedOperation
+	}
+
+	static def clone(DataOperationParameter param) {
+		val clonedParam = DATA_FACTORY.createDataOperationParameter
+		clonedParam.name = param.name
+		if (param.complexType !== null) {
+			clonedParam.complexType = param.complexType
+		} else if (param.importedComplexType !== null) {
+			clonedParam.importedComplexType = param.importedComplexType
+		} else {
+			clonedParam.primitiveType = param.primitiveType
+		}
+		return clonedParam
+	}
 
 	/**
 	 * Input Model (CML)
@@ -66,7 +101,7 @@ class LemmaDomainDataModelFactory {
 	 * Maps CML Model {@link ContextMappingModel} to LEMMA DML Model {@link DataModel}
 	 */
 	def DataModel generateDataModel() {
-		this.dataModel = DATA_FACTORY.createDataModel
+		dataModel = DATA_FACTORY.createDataModel
 
 		cmlModel.boundedContexts.forEach [ bc |
 			val ctx = mapBoundedContext2Context(bc);
@@ -75,6 +110,12 @@ class LemmaDomainDataModelFactory {
 			ctx.dataModel = dataModel
 			dataModel.contexts.add(ctx)
 		]
+
+		// Add Accessor for OHS API in the contexts which are OHS downstream contexts
+		for (ctx : dataModel.contexts) {
+			val ohsGenerator = new OpenHostServiceDomainDataModelGenerator(ctx, dataModel, cmlModel.map)
+			ohsGenerator.mapOhsDownstream()
+		}
 
 		return dataModel
 	}
@@ -208,6 +249,7 @@ class LemmaDomainDataModelFactory {
 		obj.operations.forEach([ op |
 			val lemmaOp = mapDomainObjectOperationToDataOperation(op)
 			lemmaStructure.operations.add(lemmaOp)
+			lemmaOp.dataStructure = lemmaStructure
 		])
 
 		return lemmaStructure
@@ -216,8 +258,7 @@ class LemmaDomainDataModelFactory {
 	/**
 	 * Maps CML {@link Enum} to LEMMA DML {@link Enumeration}
 	 */
-	private def dispatch ComplexType mapDomainObject2ConcreteComplexType(
-		Enum obj) {
+	private def dispatch ComplexType mapDomainObject2ConcreteComplexType(Enum obj) {
 		val lemmaEnum = createEnumeration(obj.name)
 
 		obj.values.forEach [ enumValue |
@@ -424,10 +465,10 @@ class LemmaDomainDataModelFactory {
 		if (ref.key) {
 			field.features.add(DataFieldFeature.IDENTIFIER)
 		}
-		
+
 		// Complex Types are always a part of the aggregate
 		field.features.add(DataFieldFeature.PART)
-		
+
 		return complexType
 	}
 

@@ -1,0 +1,50 @@
+/**
+ * Upstream-Rolle (PL)
+ * Wandelt das öffentliche Modell des Upstreams in ein für sich geeignetes Modell um.
+ */
+context PrintingContext {
+	// Aggregate Printing
+	
+	// Für eine exposed Aggregate wird eine Liste erzeugt, die für die getXYZs() Operation
+	// benötigt wird.
+	list PrintingJobs {PrintingJob p }
+	
+	/**
+	 * Aus CML werden nur die Domain-Modeling-Technology relevanten
+	 * Dinge übernommen
+	 */
+	structure PrintingJob<aggregate, entity> {
+		int id <identifier>,
+		string issuer,
+		Document document <part>
+	}
+	
+	structure Document <valueObject> {
+		string documentName,
+		string content
+	}
+		
+	structure PrintingService<domainService> {
+		function PrintingJob createPrintingJob(string issuer, Document doc), // Besser ein DTO (valueObject) ? => JA
+		procedure deletePrintingJob(int id)
+	}
+
+	structure PrintingJobApi<applicationService> {
+		function int createPrintingJob(PrintingJobDto printingJob),
+		procedure deletePrintingJob(int id)
+	}
+	
+	structure PrintingJobDto<valueObject> {
+		string issuerName,
+		DocumentDto document
+	}
+	
+	structure DocumentDto <valueObject> {
+		string documentName,
+		string content
+	}
+	
+	structure PrintingJobRepository<repository> {
+		function PrintingJob findById(int id)
+	}
+}

@@ -14,6 +14,7 @@ import org.contextmapper.dsl.contextMappingDSL.ContextMappingModel
 import org.jetbrains.annotations.NotNull
 import de.fhdo.lemma.cml_transformer.factory.LemmaServiceModelFactory
 import de.fhdo.lemma.cml_transformer.code_generators.ServiceDslExtractor
+import de.fhdo.lemma.cml_transformer.code_generators.DataDslExtractor
 
 /** 
  * LEMMA's model processing framework supports model-based structuring of code
@@ -70,8 +71,8 @@ import de.fhdo.lemma.cml_transformer.code_generators.ServiceDslExtractor
 		val factory = new LemmaDomainDataModelFactory(cmlModel)
 		val lemmaDataModel = factory.generateDataModel()
 		// System.out.println(DomainDataModelCodeGenerator.printDataModel(lemmaDataModel))
-//		val dataExtractor = new DataDslExtractor()
-//		System.out.println(dataExtractor.extractToString(lemmaDataModel))
+		val dataExtractor = new DataDslExtractor()
+		System.out.println(dataExtractor.extractToString(lemmaDataModel))
 		
 		/* For every context of the dataModel instantiate a Lemma SML by using a factory */
 		for (context: lemmaDataModel.contexts) {

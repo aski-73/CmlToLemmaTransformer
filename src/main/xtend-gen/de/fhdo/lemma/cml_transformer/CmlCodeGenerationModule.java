@@ -1,5 +1,6 @@
 package de.fhdo.lemma.cml_transformer;
 
+import de.fhdo.lemma.cml_transformer.code_generators.DataDslExtractor;
 import de.fhdo.lemma.cml_transformer.code_generators.ServiceDslExtractor;
 import de.fhdo.lemma.cml_transformer.factory.LemmaDomainDataModelFactory;
 import de.fhdo.lemma.cml_transformer.factory.LemmaServiceModelFactory;
@@ -74,6 +75,8 @@ public class CmlCodeGenerationModule extends AbstractCodeGenerationModule {
     final ContextMappingModel cmlModel = ((ContextMappingModel) _get);
     final LemmaDomainDataModelFactory factory = new LemmaDomainDataModelFactory(cmlModel);
     final DataModel lemmaDataModel = factory.generateDataModel();
+    final DataDslExtractor dataExtractor = new DataDslExtractor();
+    System.out.println(dataExtractor.extractToString(lemmaDataModel));
     EList<Context> _contexts = lemmaDataModel.getContexts();
     for (final Context context : _contexts) {
       {

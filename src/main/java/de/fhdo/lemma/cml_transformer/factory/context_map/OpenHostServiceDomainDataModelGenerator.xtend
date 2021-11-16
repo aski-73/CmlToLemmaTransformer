@@ -1,4 +1,4 @@
-package de.fhdo.lemma.cml_transformer.factory
+package de.fhdo.lemma.cml_transformer.factory.context_map
 
 import de.fhdo.lemma.data.Context
 import org.contextmapper.dsl.contextMappingDSL.ContextMap
@@ -9,6 +9,8 @@ import de.fhdo.lemma.data.DataModel
 import de.fhdo.lemma.data.DataStructure
 import de.fhdo.lemma.data.DataFactory
 import de.fhdo.lemma.data.ComplexTypeFeature
+import de.fhdo.lemma.cml_transformer.factory.LemmaDomainDataModelFactory
+import de.fhdo.lemma.data.DataOperation
 
 /**
  * Downstream implementation of an OHS
@@ -41,7 +43,7 @@ class OpenHostServiceDomainDataModelGenerator {
 		this.map = map
 	}
 
-	def mapOhsDownstream() {
+	def void mapOhsDownstream() {
 		val rr = filterDownstreamRelationships()
 
 		if (rr.size == 0) {
@@ -88,25 +90,31 @@ class OpenHostServiceDomainDataModelGenerator {
 		accessor.features.add(ComplexTypeFeature.APPLICATION_SERVICE)
 
 		// Add operations
-		appService.operations.forEach [ appServiceOp |
-			// But only add those operations that have a single Dto as a parameter or only primitive types
-			// in order to keep the domain model save from the upstream domain model
-			val dto = appServiceOp.parameters.stream.filter [ param |
-				param.complexType !== null && param.name.contains("Dto")
-			].findFirst() // only accept one dto because ony one is in all cases enough to capture the needed information
-			if (dto.isPresent) {
-				accessor.operations.add(appServiceOp)
-				// In order to use the dto, it must be added to the Context
-				this.context.complexTypes.add(dto.get.complexType)
-			} else { // check for only primitives
-				val primitives = appServiceOp.parameters.stream.filter [ param |
-					param.primitiveType !== null
-				].collect(Collectors.toList())
-				if (primitives.size == appServiceOp.parameters.size) {
-					accessor.operations.add(appServiceOp)
-				}
-			}
-		]
+//		val list = <DataOperation>newLinkedList
+//		appService.operations.forEach[appServiceOp|
+//			// But only add those operations that have a Dtos as parameters or only primitive types
+//			// in order to keep the domain model save from the upstream domain model
+//			val dto = appServiceOp.parameters.filter [ param |
+//				param.complexType !== null && param.complexType.name.contains("Dto")
+//			]
+// 			
+//			if (dto.size == appServiceOp.parameters.size) {
+//				list.add(LemmaDomainDataModelFactory.clone(appServiceOp))
+//				// In order to use the dto, it must be added to the Context TODO s. Fragen
+//				//this.context.complexTypes.add(dto.get.complexType)
+//			} 
+//			else { // check for only primitives
+//				val primitives = appServiceOp.parameters.stream.filter [ param |
+//					param.primitiveType !== null
+//				].collect(Collectors.toList())
+//				if (primitives.size == appServiceOp.parameters.size) {
+//					list.add(LemmaDomainDataModelFactory.clone(appServiceOp))
+//				}
+//			}
+//		]
+//		
+		accessor.operations.addAll(appService.operations)
+		
 
 		return accessor
 	}

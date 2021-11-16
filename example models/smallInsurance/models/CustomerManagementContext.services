@@ -1,0 +1,24 @@
+import datatypes from "CustomerManagementContext.data" as domain
+import technology from "../technology/rest.technology" as Rest
+/**
+ * Anti Corruption Layer (Downstream) & OHS (Upstream)
+ */
+@technology(Rest)
+@sync(Rest::_protocols.rest)
+public functional microservice de.fhdoMaster.fe.smallInsureance.CustomerManagementContextService {
+	/** 
+	 * Pro exposed Aggregate und Application Service ein Interface
+	 * Für jede exposed Aggregate werden CRUD Operationen erstellt
+	 * postXYZ (Create),  getXYZ(read), getXYZs(read), updateXYZ(Update), deleteXYZ (Delete)
+	 * Ausnahme: Diese Methoden wurden bereits in einem Application Service generiert
+	 * Bezeichnung: exposed Aggregate Name + "Api"
+	 */
+	interface CustomerApi {
+		// Alle Parameter werden immer "sync in" bzw. "sync out" Parameter sein, da CML
+		// keine genaueren Merkmale hergibt.
+		createCustomer(sync in c: domain::CustomerManagementContext.CustomerDto);
+		readCustomer(sync in id: int, sync out c: domain::CustomerManagementContext.CustomerDto);
+		updateCustomer(sync in id: int, sync in c: domain::CustomerManagementContext.CustomerDto);
+		deleteCustomer(sync in customerId: int);
+	}
+}
