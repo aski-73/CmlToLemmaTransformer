@@ -5,7 +5,11 @@ import de.fhdo.lemma.data.ComplexTypeFeature;
 import de.fhdo.lemma.data.Context;
 import de.fhdo.lemma.data.DataFactory;
 import de.fhdo.lemma.data.DataModel;
+import de.fhdo.lemma.data.DataOperation;
+import de.fhdo.lemma.data.DataOperationParameter;
 import de.fhdo.lemma.data.DataStructure;
+import de.fhdo.lemma.data.PrimitiveType;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -18,6 +22,10 @@ import org.contextmapper.dsl.contextMappingDSL.Relationship;
 import org.contextmapper.dsl.contextMappingDSL.UpstreamDownstreamRelationship;
 import org.contextmapper.dsl.contextMappingDSL.UpstreamRole;
 import org.eclipse.emf.common.util.EList;
+import org.eclipse.emf.ecore.util.EcoreUtil;
+import org.eclipse.xtext.xbase.lib.CollectionLiterals;
+import org.eclipse.xtext.xbase.lib.Functions.Function1;
+import org.eclipse.xtext.xbase.lib.IterableExtensions;
 
 /**
  * Downstream implementation of an OHS
@@ -103,7 +111,32 @@ public class OpenHostServiceDomainDataModelGenerator {
     final DataStructure accessor = OpenHostServiceDomainDataModelGenerator.DATA_FACTORY.createDataStructure();
     accessor.setName(appService.getName().replace("Api", "Accessor"));
     accessor.getFeatures().add(ComplexTypeFeature.APPLICATION_SERVICE);
-    accessor.getOperations().addAll(appService.getOperations());
+    final LinkedList<DataOperation> list = CollectionLiterals.<DataOperation>newLinkedList();
+    final Consumer<DataOperation> _function = (DataOperation appServiceOp) -> {
+      final Function1<DataOperationParameter, Boolean> _function_1 = (DataOperationParameter param) -> {
+        return Boolean.valueOf(((param.getComplexType() != null) && param.getComplexType().getName().contains("Dto")));
+      };
+      final Iterable<DataOperationParameter> dto = IterableExtensions.<DataOperationParameter>filter(appServiceOp.getParameters(), _function_1);
+      int _size = IterableExtensions.size(dto);
+      int _size_1 = appServiceOp.getParameters().size();
+      boolean _equals = (_size == _size_1);
+      if (_equals) {
+        list.add(EcoreUtil.<DataOperation>copy(appServiceOp));
+      } else {
+        final Predicate<DataOperationParameter> _function_2 = (DataOperationParameter param) -> {
+          PrimitiveType _primitiveType = param.getPrimitiveType();
+          return (_primitiveType != null);
+        };
+        final List<DataOperationParameter> primitives = appServiceOp.getParameters().stream().filter(_function_2).collect(Collectors.<DataOperationParameter>toList());
+        int _size_2 = primitives.size();
+        int _size_3 = appServiceOp.getParameters().size();
+        boolean _equals_1 = (_size_2 == _size_3);
+        if (_equals_1) {
+          list.add(EcoreUtil.<DataOperation>copy(appServiceOp));
+        }
+      }
+    };
+    appService.getOperations().forEach(_function);
     return accessor;
   }
   
