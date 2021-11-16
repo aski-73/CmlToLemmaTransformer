@@ -1,44 +1,37 @@
 package de.fhdo.lemma.cml_transformer.factory
 
-import org.contextmapper.dsl.contextMappingDSL.ContextMappingModel
-import de.fhdo.lemma.data.DataModel
-import org.contextmapper.dsl.contextMappingDSL.BoundedContext
-import de.fhdo.lemma.data.Context
 import de.fhdo.lemma.data.ComplexType
-import de.fhdo.lemma.data.DataFactory
-import org.eclipse.emf.ecore.EObject
-import java.util.List
-import de.fhdo.lemma.data.Version
-import de.fhdo.lemma.data.EnumerationField
-import de.fhdo.lemma.data.DataStructure
-import org.contextmapper.tactic.dsl.tacticdsl.DomainObject
-import org.contextmapper.dsl.contextMappingDSL.Aggregate
-import org.contextmapper.tactic.dsl.tacticdsl.SimpleDomainObject
-import org.contextmapper.tactic.dsl.tacticdsl.Entity
-import org.contextmapper.tactic.dsl.tacticdsl.ValueObject
 import de.fhdo.lemma.data.ComplexTypeFeature
-import de.fhdo.lemma.data.ListType
+import de.fhdo.lemma.data.Context
+import de.fhdo.lemma.data.DataFactory
+import de.fhdo.lemma.data.DataField
+import de.fhdo.lemma.data.DataFieldFeature
+import de.fhdo.lemma.data.DataModel
+import de.fhdo.lemma.data.DataOperation
+import de.fhdo.lemma.data.DataStructure
 import de.fhdo.lemma.data.Enumeration
-import org.contextmapper.dsl.contextMappingDSL.BoundedContextType
-import de.fhdo.lemma.data.Type
-import de.fhdo.lemma.data.PrimitiveBoolean
-import de.fhdo.lemma.data.PrimitiveString
-import de.fhdo.lemma.data.PrimitiveInteger
-import de.fhdo.lemma.data.PrimitiveLong
-import de.fhdo.lemma.data.PrimitiveDouble
-import de.fhdo.lemma.data.PrimitiveFloat
+import de.fhdo.lemma.data.EnumerationField
+import de.fhdo.lemma.data.ListType
 import de.fhdo.lemma.data.PrimitiveType
+import java.util.List
+import org.contextmapper.dsl.contextMappingDSL.Aggregate
+import org.contextmapper.dsl.contextMappingDSL.BoundedContext
+import org.contextmapper.dsl.contextMappingDSL.ContextMappingModel
+import org.contextmapper.tactic.dsl.tacticdsl.Attribute
+import org.contextmapper.tactic.dsl.tacticdsl.CollectionType
+import org.contextmapper.tactic.dsl.tacticdsl.DomainObject
+import org.contextmapper.tactic.dsl.tacticdsl.DomainObjectOperation
+import org.contextmapper.tactic.dsl.tacticdsl.Entity
+import org.contextmapper.tactic.dsl.tacticdsl.Enum
 import org.contextmapper.tactic.dsl.tacticdsl.Reference
-import de.fhdo.lemma.data.PrimitiveUnspecified
 import org.contextmapper.tactic.dsl.tacticdsl.Service
 import org.contextmapper.tactic.dsl.tacticdsl.ServiceOperation
-import de.fhdo.lemma.data.DataOperation
-import org.contextmapper.tactic.dsl.tacticdsl.DomainObjectOperation
-import org.contextmapper.tactic.dsl.tacticdsl.CollectionType
-import de.fhdo.lemma.data.DataField
-import org.contextmapper.tactic.dsl.tacticdsl.Attribute
-import de.fhdo.lemma.data.DataFieldFeature
+import org.contextmapper.tactic.dsl.tacticdsl.SimpleDomainObject
+import org.contextmapper.tactic.dsl.tacticdsl.ValueObject
 
+/**
+ * Model transformation from ContextMapper DSL (CML) to LEMMA Domain Data Modeling Language (DML)
+ */
 class LemmaDomainDataModelFactory {
 	static val DATA_FACTORY = DataFactory.eINSTANCE
 
@@ -149,7 +142,7 @@ class LemmaDomainDataModelFactory {
 	}
 
 	/**
-	 * Maps CML {@link SimpleDomainObject} (super class of {@link DomainObject} and {@link Enum})
+	 * Maps CML {@link SimpleDomainObject} (super class of {@link DomainObject} and {@link java.lang.Enum})
 	 * to a LEMMA {@link ComplexType}.
 	 * In other words it creates DataStructures and Enums depending on the given {@link SimpleDomainObject}
 	 */
@@ -221,10 +214,10 @@ class LemmaDomainDataModelFactory {
 	}
 
 	/**
-	 * Maps CML {@link org.contextmapper.tactic.dsl.tacticdsl.Enum} to LEMMA DML {@link Enumeration}
+	 * Maps CML {@link Enum} to LEMMA DML {@link Enumeration}
 	 */
 	private def dispatch ComplexType mapDomainObject2ConcreteComplexType(
-		org.contextmapper.tactic.dsl.tacticdsl.Enum obj) {
+		Enum obj) {
 		val lemmaEnum = createEnumeration(obj.name)
 
 		obj.values.forEach [ enumValue |

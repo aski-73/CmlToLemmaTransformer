@@ -39,6 +39,9 @@ import org.eclipse.emf.common.util.EList;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.StringExtensions;
 
+/**
+ * Model transformation from ContextMapper DSL (CML) to LEMMA Domain Data Modeling Language (DML)
+ */
 @SuppressWarnings("all")
 public class LemmaDomainDataModelFactory {
   private static final DataFactory DATA_FACTORY = DataFactory.eINSTANCE;
@@ -144,7 +147,7 @@ public class LemmaDomainDataModelFactory {
   }
   
   /**
-   * Maps CML {@link SimpleDomainObject} (super class of {@link DomainObject} and {@link Enum})
+   * Maps CML {@link SimpleDomainObject} (super class of {@link DomainObject} and {@link java.lang.Enum})
    * to a LEMMA {@link ComplexType}.
    * In other words it creates DataStructures and Enums depending on the given {@link SimpleDomainObject}
    */
@@ -207,7 +210,7 @@ public class LemmaDomainDataModelFactory {
   }
   
   /**
-   * Maps CML {@link org.contextmapper.tactic.dsl.tacticdsl.Enum} to LEMMA DML {@link Enumeration}
+   * Maps CML {@link Enum} to LEMMA DML {@link Enumeration}
    */
   private ComplexType _mapDomainObject2ConcreteComplexType(final org.contextmapper.tactic.dsl.tacticdsl.Enum obj) {
     final Enumeration lemmaEnum = this.createEnumeration(obj.getName());

@@ -32,13 +32,9 @@ dependencies {
     // draws on the type system provided by the Domain Data Modeling Language.
     implementation("de.fhdo.lemma.data.datadsl:de.fhdo.lemma.data.datadsl:$version")
     implementation("de.fhdo.lemma.data.datadsl:de.fhdo.lemma.data.datadsl.metamodel:$version")
-
-    // Dependencies for the intermediate specification for LEMMA service models. These dependencies are needed by the
-    // example model processor to support parsing of intermediate service models. Note that we also require the
-    // intermediate specification for LEMMA domain models, because the intermediate specification for LEMMA service
-    // models draws on the type system provided by the intermediate specification for LEMMA domain models.
-    implementation("de.fhdo.lemma.intermediate:de.fhdo.lemma.data.intermediate.metamodel:$version")
-    implementation("de.fhdo.lemma.intermediate:de.fhdo.lemma.service.intermediate.metamodel:$version")
+    
+    implementation("de.fhdo.lemma.technology.technologydsl:de.fhdo.lemma.technology.technologydsl:$version")
+    implementation("de.fhdo.lemma.technology.technologydsl:de.fhdo.lemma.technology.technologydsl.metamodel:$version")
     
     // https://mvnrepository.com/artifact/org.contextmapper/context-mapper-dsl
 	implementation("org.contextmapper:context-mapper-dsl:6.6.0")

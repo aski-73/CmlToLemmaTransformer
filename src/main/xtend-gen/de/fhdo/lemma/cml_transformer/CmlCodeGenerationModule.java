@@ -1,10 +1,13 @@
 package de.fhdo.lemma.cml_transformer;
 
+import de.fhdo.lemma.cml_transformer.code_generators.ServiceDslExtractor;
 import de.fhdo.lemma.cml_transformer.factory.LemmaDomainDataModelFactory;
+import de.fhdo.lemma.cml_transformer.factory.LemmaServiceModelFactory;
+import de.fhdo.lemma.data.Context;
 import de.fhdo.lemma.data.DataModel;
-import de.fhdo.lemma.data.datadsl.extractor.DataDslExtractor;
 import de.fhdo.lemma.model_processing.annotations.CodeGenerationModule;
 import de.fhdo.lemma.model_processing.builtin_phases.code_generation.AbstractCodeGenerationModule;
+import de.fhdo.lemma.service.ServiceModel;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -13,6 +16,7 @@ import java.util.Map;
 import kotlin.Pair;
 import org.contextmapper.dsl.contextMappingDSL.ContextMappingDSLPackage;
 import org.contextmapper.dsl.contextMappingDSL.ContextMappingModel;
+import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.xtend2.lib.StringConcatenation;
 import org.jetbrains.annotations.NotNull;
@@ -65,20 +69,27 @@ public class CmlCodeGenerationModule extends AbstractCodeGenerationModule {
   @NotNull
   @Override
   public Map<String, Pair<String, Charset>> execute(@NotNull final String[] phaseArguments, @NotNull final String[] moduleArguments) {
-    StringBuilder resultFileContents = new StringBuilder();
+    final StringBuilder resultFileContents = new StringBuilder();
     EObject _get = this.getResource().getContents().get(0);
-    ContextMappingModel cmlModel = ((ContextMappingModel) _get);
-    LemmaDomainDataModelFactory factory = new LemmaDomainDataModelFactory(cmlModel);
-    DataModel lemmaDataModel = factory.generateDataModel();
-    final DataDslExtractor dataExtractor = new DataDslExtractor();
-    System.out.println(dataExtractor.extractToString(lemmaDataModel));
+    final ContextMappingModel cmlModel = ((ContextMappingModel) _get);
+    final LemmaDomainDataModelFactory factory = new LemmaDomainDataModelFactory(cmlModel);
+    final DataModel lemmaDataModel = factory.generateDataModel();
+    EList<Context> _contexts = lemmaDataModel.getContexts();
+    for (final Context context : _contexts) {
+      {
+        final LemmaServiceModelFactory serviceModelFactory = new LemmaServiceModelFactory(cmlModel, context);
+        final ServiceModel serviceModel = serviceModelFactory.buildServiceModel();
+        final ServiceDslExtractor serviceExtractor = new ServiceDslExtractor();
+        System.out.println(serviceExtractor.extractToString(serviceModel));
+      }
+    }
     StringConcatenation _builder = new StringConcatenation();
     String _targetFolder = this.getTargetFolder();
     _builder.append(_targetFolder);
     _builder.append(File.separator);
     _builder.append("results.txt");
-    String resultFilePath = _builder.toString();
-    Map<String, String> resultMap = new HashMap<String, String>();
+    final String resultFilePath = _builder.toString();
+    final Map<String, String> resultMap = new HashMap<String, String>();
     resultMap.put(resultFilePath, resultFileContents.toString());
     return this.withCharset(resultMap, StandardCharsets.UTF_8.name());
   }

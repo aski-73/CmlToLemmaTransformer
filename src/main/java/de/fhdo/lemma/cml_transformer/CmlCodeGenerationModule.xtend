@@ -1,9 +1,6 @@
 package de.fhdo.lemma.cml_transformer
 
-import de.fhdo.lemma.cml_transformer.code_generators.DomainDataModelCodeGenerator
 import de.fhdo.lemma.cml_transformer.factory.LemmaDomainDataModelFactory
-import de.fhdo.lemma.data.DataModel
-import de.fhdo.lemma.data.datadsl.extractor.DataDslExtractor
 import de.fhdo.lemma.model_processing.annotations.CodeGenerationModule
 import de.fhdo.lemma.model_processing.builtin_phases.code_generation.AbstractCodeGenerationModule
 import java.io.File
@@ -15,6 +12,8 @@ import kotlin.Pair
 import org.contextmapper.dsl.contextMappingDSL.ContextMappingDSLPackage
 import org.contextmapper.dsl.contextMappingDSL.ContextMappingModel
 import org.jetbrains.annotations.NotNull
+import de.fhdo.lemma.cml_transformer.factory.LemmaServiceModelFactory
+import de.fhdo.lemma.cml_transformer.code_generators.ServiceDslExtractor
 
 /** 
  * LEMMA's model processing framework supports model-based structuring of code
@@ -59,22 +58,33 @@ import org.jetbrains.annotations.NotNull
 	 */
 	@NotNull override Map<String, Pair<String, Charset>> execute(@NotNull String[] phaseArguments,
 		@NotNull String[] moduleArguments) {
-		var StringBuilder resultFileContents = new StringBuilder()
+		val StringBuilder resultFileContents = new StringBuilder()
 		/*
 		 * Retrieve the passed cml source model to work with (the above implementation
 		 * of {@link getLanguageNamespace} tells the framework that this module shall
 		 * work on cml source models).
 		 */
-		var ContextMappingModel cmlModel = (getResource().getContents().get(0) as ContextMappingModel)
+		val ContextMappingModel cmlModel = (getResource().getContents().get(0) as ContextMappingModel)
+		
 		/* Instantiate Lemma DML by using a factory */
-		var LemmaDomainDataModelFactory factory = new LemmaDomainDataModelFactory(cmlModel)
-		var DataModel lemmaDataModel = factory.generateDataModel()
+		val factory = new LemmaDomainDataModelFactory(cmlModel)
+		val lemmaDataModel = factory.generateDataModel()
 		// System.out.println(DomainDataModelCodeGenerator.printDataModel(lemmaDataModel))
-		val dataExtractor = new DataDslExtractor()
-		System.out.println(dataExtractor.extractToString(lemmaDataModel))
+//		val dataExtractor = new DataDslExtractor()
+//		System.out.println(dataExtractor.extractToString(lemmaDataModel))
+		
+		/* For every context of the dataModel instantiate a Lemma SML by using a factory */
+		for (context: lemmaDataModel.contexts) {
+			val serviceModelFactory = new LemmaServiceModelFactory(cmlModel, context)
+			val serviceModel = serviceModelFactory.buildServiceModel()
+			val serviceExtractor = new ServiceDslExtractor()
+			System.out.println(serviceExtractor.extractToString(serviceModel))
+		}
+		
+		
 		/* Prepare the path of the generated file */
-		var String resultFilePath = '''«getTargetFolder()»«File::separator»results.txt'''.toString
-		var Map<String, String> resultMap = new HashMap()
+		val String resultFilePath = '''«getTargetFolder()»«File::separator»results.txt'''.toString
+		val Map<String, String> resultMap = new HashMap()
 		resultMap.put(resultFilePath, resultFileContents.toString())
 		return withCharset(resultMap, StandardCharsets::UTF_8.name())
 	}
