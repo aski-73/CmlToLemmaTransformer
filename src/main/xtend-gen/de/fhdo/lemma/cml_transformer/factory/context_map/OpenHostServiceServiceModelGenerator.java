@@ -1,5 +1,6 @@
 package de.fhdo.lemma.cml_transformer.factory.context_map;
 
+import com.google.common.base.Objects;
 import de.fhdo.lemma.cml_transformer.factory.LemmaTechnologyModelFactory;
 import de.fhdo.lemma.data.ComplexType;
 import de.fhdo.lemma.data.Context;
@@ -20,10 +21,12 @@ import de.fhdo.lemma.service.Operation;
 import de.fhdo.lemma.service.Parameter;
 import de.fhdo.lemma.service.ReferredOperation;
 import de.fhdo.lemma.service.ServiceFactory;
+import de.fhdo.lemma.service.ServiceModel;
 import de.fhdo.lemma.technology.CommunicationType;
 import de.fhdo.lemma.technology.ExchangePattern;
 import de.fhdo.lemma.technology.ServiceAspect;
 import de.fhdo.lemma.technology.Technology;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -36,6 +39,9 @@ import org.contextmapper.dsl.contextMappingDSL.Relationship;
 import org.contextmapper.dsl.contextMappingDSL.UpstreamDownstreamRelationship;
 import org.contextmapper.dsl.contextMappingDSL.UpstreamRole;
 import org.eclipse.emf.common.util.EList;
+import org.eclipse.emf.ecore.util.EcoreUtil;
+import org.eclipse.xtext.xbase.lib.CollectionLiterals;
+import org.eclipse.xtext.xbase.lib.Pair;
 
 /**
  * Upstream implementation of an OHS
@@ -58,6 +64,11 @@ public class OpenHostServiceServiceModelGenerator {
   private Context context;
   
   /**
+   * The service model that contains the microservice. Needed in order to add the imports
+   */
+  private ServiceModel serviceModel;
+  
+  /**
    * LEMMA {@link Microservice} that will get a new {@link ServiceInterface}. Either Api or Accessor. Depends on if its a upstream/downstream context.
    */
   private Microservice service;
@@ -74,8 +85,9 @@ public class OpenHostServiceServiceModelGenerator {
   
   private final LemmaTechnologyModelFactory techFactory = new LemmaTechnologyModelFactory();
   
-  public OpenHostServiceServiceModelGenerator(final Context context, final Microservice service, final ContextMap map, final String domainDataModelPath, final String technologyModelPath) {
+  public OpenHostServiceServiceModelGenerator(final Context context, final ServiceModel serviceModel, final Microservice service, final ContextMap map, final String domainDataModelPath, final String technologyModelPath) {
     this.context = context;
+    this.serviceModel = serviceModel;
     this.service = service;
     this.map = map;
     this.domainDataModelPath = domainDataModelPath;
@@ -108,8 +120,9 @@ public class OpenHostServiceServiceModelGenerator {
         if (_isPresent) {
           final Technology technology = this.techFactory.mapImplementationTechnologyToTechnologymodel(rel.getImplementationTechnology());
           ComplexType _get = appService.get();
-          final Interface interface_ = this.mapApplicationServiceToServiceInterface(((DataStructure) _get), technology);
-          this.service.getInterfaces().add(interface_);
+          final Pair<Interface, List<Import>> interfaceImportPair = this.mapApplicationServiceToServiceInterface(((DataStructure) _get), technology);
+          this.service.getInterfaces().add(interfaceImportPair.getKey());
+          this.serviceModel.getImports().addAll(interfaceImportPair.getValue());
         }
       };
       ((UpstreamDownstreamRelationship) rel).getUpstreamExposedAggregates().stream().forEach(_function);
@@ -118,48 +131,61 @@ public class OpenHostServiceServiceModelGenerator {
   
   /**
    * Maps a LEMMA Application Service to a LEMMA SML {@link Interface}
+   * See sml/metamodel-interfaces-operations.uxf and sml/metamodel-endpoints.uxf for reference
+   * 
+   * @return Pair: Mapped Interface -> List with the used imports
    */
-  private Interface mapApplicationServiceToServiceInterface(final DataStructure appService, final Technology technology) {
+  private Pair<Interface, List<Import>> mapApplicationServiceToServiceInterface(final DataStructure appService, final Technology technology) {
     final Interface interface_ = OpenHostServiceServiceModelGenerator.SERVICE_FACTORY.createInterface();
     interface_.setName(appService.getName());
+    final LinkedList<Import> imports = CollectionLiterals.<Import>newLinkedList();
     EList<DataOperation> _operations = appService.getOperations();
     if (_operations!=null) {
       final Consumer<DataOperation> _function = (DataOperation appServiceOp) -> {
-        final Operation serviceOp = this.mapDataOperationToServiceOperation(appServiceOp);
-        final ImportedServiceAspect importedServiceAspect = OpenHostServiceServiceModelGenerator.SERVICE_FACTORY.createImportedServiceAspect();
-        importedServiceAspect.setImportedAspect(this.techFactory.mapMethodNamesToServiceAspectNames(serviceOp.getName()));
-        importedServiceAspect.setImport(this.returnImportForTechnology(technology));
-        final ImportedProtocolAndDataFormat importedProtocol = OpenHostServiceServiceModelGenerator.SERVICE_FACTORY.createImportedProtocolAndDataFormat();
-        importedProtocol.setDataFormat(technology.getProtocols().get(0).getDataFormats().get(0));
-        importedProtocol.setImportedProtocol(technology.getProtocols().get(0));
-        final Endpoint endpoint = OpenHostServiceServiceModelGenerator.SERVICE_FACTORY.createEndpoint();
-        EList<String> _addresses = endpoint.getAddresses();
-        String _name = interface_.getName();
-        String _plus = ("/" + _name);
-        _addresses.add(_plus);
-        endpoint.getProtocols().add(importedProtocol);
-        serviceOp.getEndpoints().add(endpoint);
-        serviceOp.getAspects().add(importedServiceAspect);
+        final Operation serviceOp = this.mapDataOperationToServiceOperation(appServiceOp, imports);
+        if ((technology != null)) {
+          final ImportedServiceAspect importedServiceAspect = OpenHostServiceServiceModelGenerator.SERVICE_FACTORY.createImportedServiceAspect();
+          importedServiceAspect.setImportedAspect(this.techFactory.mapMethodNamesToServiceAspectNames(serviceOp.getName()));
+          importedServiceAspect.setImport(this.returnImportForTechnology(technology));
+          final ImportedProtocolAndDataFormat importedProtocol = OpenHostServiceServiceModelGenerator.SERVICE_FACTORY.createImportedProtocolAndDataFormat();
+          importedProtocol.setDataFormat(technology.getProtocols().get(0).getDataFormats().get(0));
+          importedProtocol.setImportedProtocol(technology.getProtocols().get(0));
+          importedProtocol.setImport(this.returnImportForTechnology(technology));
+          final Endpoint endpoint = OpenHostServiceServiceModelGenerator.SERVICE_FACTORY.createEndpoint();
+          EList<String> _addresses = endpoint.getAddresses();
+          String _name = interface_.getName();
+          String _plus = ("/" + _name);
+          _addresses.add(_plus);
+          endpoint.getProtocols().add(importedProtocol);
+          serviceOp.getEndpoints().add(endpoint);
+          serviceOp.getAspects().add(importedServiceAspect);
+          final Import technologyImport = this.returnImportForTechnology(technology);
+          boolean _importExists = this.importExists(imports, technologyImport);
+          boolean _not = (!_importExists);
+          if (_not) {
+            imports.add(technologyImport);
+          }
+        }
         interface_.getOperations().add(serviceOp);
       };
       _operations.forEach(_function);
     }
-    return interface_;
+    return Pair.<Interface, List<Import>>of(interface_, imports);
   }
   
   /**
    * Maps LEMMA {@link DataOperation} to a {@link ReferredOperation] of a {@link ServiceInterface}
    */
-  private ReferredOperation mapDataOperationToReferredOperation(final DataOperation dataOperation) {
+  private ReferredOperation mapDataOperationToReferredOperation(final DataOperation dataOperation, final List<Import> imports) {
     final ReferredOperation referredOperation = OpenHostServiceServiceModelGenerator.SERVICE_FACTORY.createReferredOperation();
-    referredOperation.setOperation(this.mapDataOperationToServiceOperation(dataOperation));
+    referredOperation.setOperation(this.mapDataOperationToServiceOperation(dataOperation, imports));
     return referredOperation;
   }
   
   /**
    * Maps LEMMA {@link DataOperation} to a {@link Operation] of a {@link ServiceInterface}
    */
-  private Operation mapDataOperationToServiceOperation(final DataOperation dataOperation) {
+  private Operation mapDataOperationToServiceOperation(final DataOperation dataOperation, final List<Import> imports) {
     final Operation operation = OpenHostServiceServiceModelGenerator.SERVICE_FACTORY.createOperation();
     operation.setName(dataOperation.getName());
     boolean _isHasNoReturnType = dataOperation.isHasNoReturnType();
@@ -172,8 +198,15 @@ public class OpenHostServiceServiceModelGenerator {
       if (_tripleNotEquals) {
         returnParam.setCommunicationType(CommunicationType.SYNCHRONOUS);
         final ImportedType importedType = OpenHostServiceServiceModelGenerator.SERVICE_FACTORY.createImportedType();
-        importedType.setImport(this.returnImportForComplexType(dataOperation.getComplexReturnType()));
+        final Import paramTypeImport = this.returnImportForComplexType(dataOperation.getComplexReturnType());
+        importedType.setImport(paramTypeImport);
         returnParam.setImportedType(importedType);
+        final Import paramTypeImportClone = EcoreUtil.<Import>copy(paramTypeImport);
+        boolean _importExists = this.importExists(imports, paramTypeImportClone);
+        boolean _not_1 = (!_importExists);
+        if (_not_1) {
+          imports.add(paramTypeImportClone);
+        }
       } else {
         returnParam.setPrimitiveType(dataOperation.getPrimitiveReturnType());
       }
@@ -188,10 +221,17 @@ public class OpenHostServiceServiceModelGenerator {
       if (_tripleNotEquals_1) {
         serviceOpParam.setCommunicationType(CommunicationType.SYNCHRONOUS);
         final ImportedType importedType_1 = OpenHostServiceServiceModelGenerator.SERVICE_FACTORY.createImportedType();
-        importedType_1.setImport(this.returnImportForComplexType(param.getComplexType()));
+        final Import complexTypeImport = this.returnImportForComplexType(param.getComplexType());
+        importedType_1.setImport(complexTypeImport);
         serviceOpParam.setImportedType(importedType_1);
         ImportedType _importedType = serviceOpParam.getImportedType();
         _importedType.setType(param.getComplexType());
+        final Import complexTypeImportClone = EcoreUtil.<Import>copy(complexTypeImport);
+        boolean _importExists_1 = this.importExists(imports, complexTypeImportClone);
+        boolean _not_2 = (!_importExists_1);
+        if (_not_2) {
+          imports.add(complexTypeImportClone);
+        }
       } else {
         serviceOpParam.setPrimitiveType(param.getPrimitiveType());
       }
@@ -246,5 +286,14 @@ public class OpenHostServiceServiceModelGenerator {
       return ((UpstreamDownstreamRelationship) rel).getUpstreamRoles().contains(UpstreamRole.OPEN_HOST_SERVICE);
     };
     return this.map.getRelationships().stream().filter(_function).filter(_function_1).filter(_function_2).collect(Collectors.<Relationship>toList());
+  }
+  
+  private boolean importExists(final List<Import> imports, final Import im) {
+    for (final Import tempIm : imports) {
+      if ((Objects.equal(tempIm.getImportType(), im.getImportType()) && tempIm.getImportURI().equals(im.getImportURI()))) {
+        return true;
+      }
+    }
+    return false;
   }
 }

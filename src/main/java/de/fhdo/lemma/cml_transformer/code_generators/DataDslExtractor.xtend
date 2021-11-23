@@ -86,7 +86,7 @@ class DataDslExtractor {
 	 * Extract DataStructure
 	 */
 	def String extractToString(DataStructure dataStructure) {
-		val preamble = '''structure «lemmaName(dataStructure.name)»'''
+		val preamble = '''structure «lemmaName(dataStructure.name)»«dataStructure.features.extractFeatures»'''
 		if (dataStructure.dataFields.empty && dataStructure.operations.empty)
 			return '''«preamble» {}'''
 

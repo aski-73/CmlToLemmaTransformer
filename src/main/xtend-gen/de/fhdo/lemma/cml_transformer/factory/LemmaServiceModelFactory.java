@@ -122,7 +122,7 @@ public class LemmaServiceModelFactory {
       microservice.setVisibility(LemmaServiceModelFactory.mapBoundedContextTypeToServiceVisibility(boundedContext.get().getType()));
       microservice.setType(LemmaServiceModelFactory.mapBoundedContextTypeToServiceType(boundedContext.get().getType()));
       ContextMap _map = this.cmlModel.getMap();
-      final OpenHostServiceServiceModelGenerator ohsUpstreamGenerator = new OpenHostServiceServiceModelGenerator(this.context, microservice, _map, "../domain", "../service");
+      final OpenHostServiceServiceModelGenerator ohsUpstreamGenerator = new OpenHostServiceServiceModelGenerator(this.context, this.serviceModel, microservice, _map, "../domain", "../service");
       ohsUpstreamGenerator.mapOhsUpstream();
       this.serviceModel.getMicroservices().add(microservice);
     }

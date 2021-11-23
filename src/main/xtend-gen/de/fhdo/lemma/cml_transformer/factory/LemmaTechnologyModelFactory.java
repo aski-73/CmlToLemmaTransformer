@@ -82,8 +82,7 @@ public class LemmaTechnologyModelFactory {
    * Maps CML implementationTechnology Keyword to specific LEMMA Technologies
    */
   public Technology mapImplementationTechnologyToTechnologymodel(final String implementationTechnology) {
-    boolean _equals = implementationTechnology.equals("RESTfulHttp");
-    if (_equals) {
+    if (((implementationTechnology != null) && implementationTechnology.equals("RESTfulHttp"))) {
       return this.createRestTechnology();
     } else {
       return null;

@@ -141,6 +141,8 @@ public class DataDslExtractor {
       _builder.append("structure ");
       String _lemmaName = Util.lemmaName(dataStructure.getName());
       _builder.append(_lemmaName);
+      String _extractFeatures = DataDslExtractor.extractFeatures(dataStructure.getFeatures());
+      _builder.append(_extractFeatures);
       final String preamble = _builder.toString();
       if ((dataStructure.getDataFields().isEmpty() && dataStructure.getOperations().isEmpty())) {
         StringConcatenation _builder_1 = new StringConcatenation();

@@ -21,6 +21,9 @@ import org.contextmapper.dsl.contextMappingDSL.BoundedContext
 import org.contextmapper.dsl.contextMappingDSL.ContextMap
 import org.contextmapper.dsl.contextMappingDSL.UpstreamDownstreamRelationship
 import org.contextmapper.dsl.contextMappingDSL.UpstreamRole
+import java.util.List
+import de.fhdo.lemma.service.ServiceModel
+import org.eclipse.emf.ecore.util.EcoreUtil
 
 /**
  * Upstream implementation of an OHS
@@ -33,12 +36,17 @@ class OpenHostServiceServiceModelGenerator {
 	static val SERVICE_MODEL_IMPORT_ALIAS = "Services"
 
 	static val SERVICE_FACTORY = ServiceFactory.eINSTANCE
-	static  val DATA_FACTORY = DataFactory.eINSTANCE
+	static val DATA_FACTORY = DataFactory.eINSTANCE
 
 	/**
 	 * Mapped LEMMA DML {@link Context} for which a Microservice will be generated
 	 */
 	private Context context
+
+	/**
+	 * The service model that contains the microservice. Needed in order to add the imports
+	 */
+	private ServiceModel serviceModel
 
 	/**
 	 * LEMMA {@link Microservice} that will get a new {@link ServiceInterface}. Either Api or Accessor. Depends on if its a upstream/downstream context.
@@ -54,11 +62,19 @@ class OpenHostServiceServiceModelGenerator {
 	private String domainDataModelPath
 
 	private String technologyModelPath
-	
+
 	private val techFactory = new LemmaTechnologyModelFactory()
 
-	new(Context context, Microservice service, ContextMap map, String domainDataModelPath, String technologyModelPath) {
+	new(
+		Context context,
+		ServiceModel serviceModel,
+		Microservice service,
+		ContextMap map,
+		String domainDataModelPath,
+		String technologyModelPath
+	) {
 		this.context = context
+		this.serviceModel = serviceModel
 		this.service = service
 		this.map = map
 		this.domainDataModelPath = domainDataModelPath
@@ -80,74 +96,92 @@ class OpenHostServiceServiceModelGenerator {
 
 		// For every exposed aggregate an interface will be generated (if it is not created yet. Different relationships with
 		// the same OHS can expose different aggregates. But it is possible to expose the same)
-		for (rel: rr) {
-			
-			(rel as UpstreamDownstreamRelationship).upstreamExposedAggregates.stream.forEach[
-				agg |
-			// Look up the Application Service in the LEMMA Context that exposes the exposed aggregate 
-			val appService = this.context.complexTypes.stream.filter([ cType |
-				cType.name.equals(agg.name + "Api")
-			]).findFirst()
+		for (rel : rr) {
 
-			if (appService.isPresent) {
-				// Create an service interface for the application service. The interface and its operation
-				// use a technology that its mapped by the CML keyword "implementationTechnology"
-				
-				val technology = techFactory.mapImplementationTechnologyToTechnologymodel(rel.implementationTechnology)
-				val interface = mapApplicationServiceToServiceInterface(appService.get as DataStructure, technology)
+			(rel as UpstreamDownstreamRelationship).upstreamExposedAggregates.stream.forEach [ agg |
+				// Look up the Application Service in the LEMMA Context that exposes the exposed aggregate 
+				val appService = this.context.complexTypes.stream.filter([ cType |
+					cType.name.equals(agg.name + "Api")
+				]).findFirst()
 
-				// Put the created interface in the service model
-				this.service.interfaces.add(interface)
-			}
+				if (appService.isPresent) {
+					// Create an service interface for the application service. The interface and its operation
+					// use a technology that its mapped by the CML keyword "implementationTechnology"
+					val technology = techFactory.
+						mapImplementationTechnologyToTechnologymodel(rel.implementationTechnology)
+					val interfaceImportPair = mapApplicationServiceToServiceInterface(appService.get as DataStructure,
+						technology)
+
+					// Put the created interface in the service model
+					this.service.interfaces.add(interfaceImportPair.key)
+					this.serviceModel.imports.addAll(interfaceImportPair.value)
+				}
 			]
 		}
 	}
 
 	/**
 	 * Maps a LEMMA Application Service to a LEMMA SML {@link Interface}
+	 * See sml/metamodel-interfaces-operations.uxf and sml/metamodel-endpoints.uxf for reference
+	 * 
+	 * @return Pair: Mapped Interface -> List with the used imports
 	 */
-	private def mapApplicationServiceToServiceInterface(DataStructure appService, Technology technology) {
+	private def Pair<Interface, List<Import>> mapApplicationServiceToServiceInterface(DataStructure appService,
+		Technology technology) {
 		val interface = SERVICE_FACTORY.createInterface
 		interface.name = appService.name
+		val imports = <Import>newLinkedList
 
 		appService.operations?.forEach([ appServiceOp |
-			val serviceOp = appServiceOp.mapDataOperationToServiceOperation
-			// Add Service Aspects for the operation
-			val importedServiceAspect = SERVICE_FACTORY.createImportedServiceAspect
-			importedServiceAspect.importedAspect = techFactory.mapMethodNamesToServiceAspectNames(serviceOp.name)
-			importedServiceAspect.import = technology.returnImportForTechnology
-			// Add Endpoint. URI is "/InterfaceName". Protocol is the first protocol of the technology
-			val importedProtocol = SERVICE_FACTORY.createImportedProtocolAndDataFormat
-			importedProtocol.dataFormat = technology.protocols.get(0).dataFormats.get(0)
-			importedProtocol.importedProtocol = technology.protocols.get(0)
-			val endpoint = SERVICE_FACTORY.createEndpoint
-			endpoint.addresses.add("/" + interface.name)
-			endpoint.protocols.add(importedProtocol)
-			serviceOp.endpoints.add(endpoint)
+			val serviceOp = appServiceOp.mapDataOperationToServiceOperation(imports)
+			if (technology !== null) {
+				// Add Service Aspects for the operation
+				val importedServiceAspect = SERVICE_FACTORY.createImportedServiceAspect
+				// Try to map the operationName to a service aspect since its not possible
+				// to determine it from the CML Model. Currenty only useable with the predefined
+				// Rest Technology with the GET, POST, CREATE, DELETE Aspects
+				importedServiceAspect.importedAspect = techFactory.mapMethodNamesToServiceAspectNames(serviceOp.name)
+				importedServiceAspect.import = technology.returnImportForTechnology
+				// Add Endpoint. URI is "/InterfaceName". Protocol is the first protocol of the technology
+				// since its not possible to determine which protocol to use from the CML model
+				val importedProtocol = SERVICE_FACTORY.createImportedProtocolAndDataFormat
+				importedProtocol.dataFormat = technology.protocols.get(0).dataFormats.get(0)
+				importedProtocol.importedProtocol = technology.protocols.get(0)
+				importedProtocol.import = technology.returnImportForTechnology
+				val endpoint = SERVICE_FACTORY.createEndpoint
+				endpoint.addresses.add("/" + interface.name)
+				endpoint.protocols.add(importedProtocol)
+				serviceOp.endpoints.add(endpoint)
+				
+				serviceOp.aspects.add(importedServiceAspect)
+					
+				val technologyImport = technology.returnImportForTechnology
+				if (!imports.importExists(technologyImport)) {
+					imports.add(technologyImport)	
+				}
+			}
 			
-			serviceOp.aspects.add(importedServiceAspect)
 			interface.operations.add(serviceOp)
 		])
 
-		return interface
+		return interface -> imports
 	}
 
 	/**
 	 * Maps LEMMA {@link DataOperation} to a {@link ReferredOperation] of a {@link ServiceInterface} 
 	 */
-	private def mapDataOperationToReferredOperation(DataOperation dataOperation) {
+	private def mapDataOperationToReferredOperation(DataOperation dataOperation, List<Import> imports) {
 		val referredOperation = SERVICE_FACTORY.createReferredOperation
 
-		referredOperation.operation = dataOperation.mapDataOperationToServiceOperation
+		referredOperation.operation = dataOperation.mapDataOperationToServiceOperation(imports)
 
 		return referredOperation
 	}
 
-
 	/**
 	 * Maps LEMMA {@link DataOperation} to a {@link Operation] of a {@link ServiceInterface} 
 	 */
-	private def mapDataOperationToServiceOperation(DataOperation dataOperation) {
+	private def mapDataOperationToServiceOperation(DataOperation dataOperation, List<Import> imports) {
 		val operation = SERVICE_FACTORY.createOperation
 		operation.name = dataOperation.name
 
@@ -157,8 +191,15 @@ class OpenHostServiceServiceModelGenerator {
 			if (dataOperation.complexReturnType !== null) { // Complex Type				
 				returnParam.communicationType = CommunicationType.SYNCHRONOUS
 				val importedType = SERVICE_FACTORY.createImportedType
-				importedType.import = returnImportForComplexType(dataOperation.complexReturnType)
+				val paramTypeImport = returnImportForComplexType(dataOperation.complexReturnType)
+				importedType.import = paramTypeImport
 				returnParam.importedType = importedType
+				
+				// Need a deep copy because xcore models must contain unique objects
+				val paramTypeImportClone = EcoreUtil.copy(paramTypeImport)
+				if (!imports.importExists(paramTypeImportClone)) {
+					imports.add(paramTypeImportClone)
+				}
 			} else { // Primitive
 				returnParam.primitiveType = dataOperation.primitiveReturnType
 			}
@@ -173,15 +214,22 @@ class OpenHostServiceServiceModelGenerator {
 			if (param.complexType !== null) { // Complex Type				
 				serviceOpParam.communicationType = CommunicationType.SYNCHRONOUS
 				val importedType = SERVICE_FACTORY.createImportedType
-				importedType.import = returnImportForComplexType(param.complexType)
+				val complexTypeImport = returnImportForComplexType(param.complexType)
+				importedType.import = complexTypeImport
 				serviceOpParam.importedType = importedType
 				serviceOpParam.importedType.type = param.complexType
+				
+				// Need a deep copy because xcore models must contain unique objects
+				val complexTypeImportClone = EcoreUtil.copy(complexTypeImport)
+				if (!imports.importExists(complexTypeImportClone)) {
+					imports.add(complexTypeImportClone)
+				}
 			} else { // Primitive
 				serviceOpParam.primitiveType = param.primitiveType
 			}
 			operation.parameters.add(serviceOpParam)
 		])
-		
+
 		return operation
 	}
 
@@ -197,7 +245,7 @@ class OpenHostServiceServiceModelGenerator {
 
 		return import
 	}
-	
+
 	/**
 	 * Builds a {@link Import} for a {@link ServiceAspect} of a {@link Technology}
 	 */
@@ -221,5 +269,15 @@ class OpenHostServiceServiceModelGenerator {
 		]).filter([ rel |
 			(rel as UpstreamDownstreamRelationship).upstreamRoles.contains(UpstreamRole.OPEN_HOST_SERVICE)
 		]).collect(Collectors.toList())
+	}
+	
+	private def importExists (List<Import> imports, Import im)  {
+		for (Import tempIm: imports) {
+			if (tempIm.importType == im.importType && tempIm.importURI.equals(im.importURI)) {
+				return true
+			}
+		}
+		
+		return false
 	}
 }

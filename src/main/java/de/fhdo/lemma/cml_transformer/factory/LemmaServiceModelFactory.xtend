@@ -84,7 +84,7 @@ class LemmaServiceModelFactory {
 			microservice.type = mapBoundedContextTypeToServiceType(boundedContext.get.type)
 
 			// use OHS Upstream Generator to fill the microservice
-			val ohsUpstreamGenerator = new OpenHostServiceServiceModelGenerator(this.context, microservice,
+			val ohsUpstreamGenerator = new OpenHostServiceServiceModelGenerator(this.context, this.serviceModel, microservice,
 				cmlModel.map, "../domain", "../service")
 			ohsUpstreamGenerator.mapOhsUpstream()
 

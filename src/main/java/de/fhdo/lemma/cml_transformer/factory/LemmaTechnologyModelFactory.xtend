@@ -63,7 +63,7 @@ class LemmaTechnologyModelFactory {
 	 * Maps CML implementationTechnology Keyword to specific LEMMA Technologies
 	 */
 	def mapImplementationTechnologyToTechnologymodel(String implementationTechnology) {
-		if (implementationTechnology.equals("RESTfulHttp")) {
+		if (implementationTechnology !== null && implementationTechnology.equals("RESTfulHttp")) {
 			return createRestTechnology()
 		} else {
 			return null

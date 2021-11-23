@@ -91,7 +91,6 @@ class OpenHostServiceDomainDataModelGenerator {
 		accessor.features.add(ComplexTypeFeature.APPLICATION_SERVICE)
 		
 		// Add operations
-		val list = <DataOperation>newLinkedList
 		appService.operations.forEach[appServiceOp|
 			// But only add those operations that have a Dtos as parameters or only primitive types
 			// in order to keep the domain model save from the upstream domain model
@@ -100,7 +99,7 @@ class OpenHostServiceDomainDataModelGenerator {
 			]
  			
 			if (dto.size == appServiceOp.parameters.size) {
-				list.add(EcoreUtil.copy(appServiceOp))
+				accessor.operations.add(EcoreUtil.copy(appServiceOp))
 				// In order to use the dto, it must be added to the Context TODO s. Fragen
 				//this.context.complexTypes.add(dto.get.complexType)
 			} 
@@ -109,7 +108,7 @@ class OpenHostServiceDomainDataModelGenerator {
 					param.primitiveType !== null
 				].collect(Collectors.toList())
 				if (primitives.size == appServiceOp.parameters.size) {
-					list.add(EcoreUtil.copy(appServiceOp))
+					accessor.operations.add(EcoreUtil.copy(appServiceOp))
 				}
 			}
 		]
