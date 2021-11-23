@@ -28,8 +28,9 @@ import org.contextmapper.tactic.dsl.tacticdsl.Service
 import org.contextmapper.tactic.dsl.tacticdsl.ServiceOperation
 import org.contextmapper.tactic.dsl.tacticdsl.SimpleDomainObject
 import org.contextmapper.tactic.dsl.tacticdsl.ValueObject
-import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceDomainDataModelGenerator
 import de.fhdo.lemma.data.DataOperationParameter
+import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceDownstreamGenerator
+import de.fhdo.lemma.cml_transformer.factory.context_map.AnticorruptionLayerGenerator
 
 /**
  * Model transformation from ContextMapper DSL (CML) to LEMMA Domain Data Modeling Language (DML)
@@ -113,8 +114,15 @@ class LemmaDomainDataModelFactory {
 
 		// Add Accessor for OHS API in the contexts which are OHS downstream contexts
 		for (ctx : dataModel.contexts) {
-			val ohsGenerator = new OpenHostServiceDomainDataModelGenerator(ctx, dataModel, cmlModel.map)
+			val ohsGenerator = new OpenHostServiceDownstreamGenerator(ctx, dataModel, cmlModel.map)
 			ohsGenerator.mapOhsDownstream()
+		}
+		
+		// Add Anticorruption Layer
+		val errors = <String> newLinkedList
+		for (ctx : dataModel.contexts) {
+			val aclGenerator = new AnticorruptionLayerGenerator(ctx, dataModel, cmlModel.map, errors)
+			aclGenerator.mapAcl()
 		}
 
 		return dataModel

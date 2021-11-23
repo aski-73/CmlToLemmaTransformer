@@ -1,7 +1,8 @@
 package de.fhdo.lemma.cml_transformer.factory;
 
 import com.google.common.base.Objects;
-import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceDomainDataModelGenerator;
+import de.fhdo.lemma.cml_transformer.factory.context_map.AnticorruptionLayerGenerator;
+import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceDownstreamGenerator;
 import de.fhdo.lemma.data.ComplexType;
 import de.fhdo.lemma.data.ComplexTypeFeature;
 import de.fhdo.lemma.data.Context;
@@ -137,8 +138,17 @@ public class LemmaDomainDataModelFactory {
     for (final Context ctx : _contexts) {
       {
         ContextMap _map = this.cmlModel.getMap();
-        final OpenHostServiceDomainDataModelGenerator ohsGenerator = new OpenHostServiceDomainDataModelGenerator(ctx, this.dataModel, _map);
+        final OpenHostServiceDownstreamGenerator ohsGenerator = new OpenHostServiceDownstreamGenerator(ctx, this.dataModel, _map);
         ohsGenerator.mapOhsDownstream();
+      }
+    }
+    final LinkedList<String> errors = CollectionLiterals.<String>newLinkedList();
+    EList<Context> _contexts_1 = this.dataModel.getContexts();
+    for (final Context ctx_1 : _contexts_1) {
+      {
+        ContextMap _map = this.cmlModel.getMap();
+        final AnticorruptionLayerGenerator aclGenerator = new AnticorruptionLayerGenerator(ctx_1, this.dataModel, _map, errors);
+        aclGenerator.mapAcl();
       }
     }
     return this.dataModel;

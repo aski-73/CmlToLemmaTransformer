@@ -32,7 +32,7 @@ import org.eclipse.xtext.xbase.lib.IterableExtensions;
  * the Api of the OHS upstream that exposes an aggregate
  */
 @SuppressWarnings("all")
-public class OpenHostServiceDomainDataModelGenerator {
+public class OpenHostServiceDownstreamGenerator {
   private static final DataFactory DATA_FACTORY = DataFactory.eINSTANCE;
   
   /**
@@ -51,7 +51,7 @@ public class OpenHostServiceDomainDataModelGenerator {
    */
   private ContextMap map;
   
-  public OpenHostServiceDomainDataModelGenerator(final Context context, final DataModel dataModel, final ContextMap map) {
+  public OpenHostServiceDownstreamGenerator(final Context context, final DataModel dataModel, final ContextMap map) {
     this.context = context;
     this.dataModel = dataModel;
     this.map = map;
@@ -106,7 +106,7 @@ public class OpenHostServiceDomainDataModelGenerator {
    * represents an Accessor accessing the API
    */
   private DataStructure mapApplicationServiceToAccessor(final DataStructure appService) {
-    final DataStructure accessor = OpenHostServiceDomainDataModelGenerator.DATA_FACTORY.createDataStructure();
+    final DataStructure accessor = OpenHostServiceDownstreamGenerator.DATA_FACTORY.createDataStructure();
     accessor.setName(appService.getName().replace("Api", "Accessor"));
     accessor.getFeatures().add(ComplexTypeFeature.APPLICATION_SERVICE);
     final Consumer<DataOperation> _function = (DataOperation appServiceOp) -> {

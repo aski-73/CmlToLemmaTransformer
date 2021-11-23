@@ -1,6 +1,6 @@
 package de.fhdo.lemma.cml_transformer.factory;
 
-import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceServiceModelGenerator;
+import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceUpstreamGenerator;
 import de.fhdo.lemma.data.Context;
 import de.fhdo.lemma.service.Microservice;
 import de.fhdo.lemma.service.MicroserviceType;
@@ -130,7 +130,7 @@ public class LemmaServiceModelFactory {
       microservice.setVisibility(LemmaServiceModelFactory.mapBoundedContextTypeToServiceVisibility(boundedContext.get().getType()));
       microservice.setType(LemmaServiceModelFactory.mapBoundedContextTypeToServiceType(boundedContext.get().getType()));
       ContextMap _map = this.cmlModel.getMap();
-      final OpenHostServiceServiceModelGenerator ohsUpstreamGenerator = new OpenHostServiceServiceModelGenerator(this.context, this.serviceModel, microservice, _map, "../domain", "../service", this.technologies);
+      final OpenHostServiceUpstreamGenerator ohsUpstreamGenerator = new OpenHostServiceUpstreamGenerator(this.context, this.serviceModel, microservice, _map, "../domain", "../service", this.technologies);
       ohsUpstreamGenerator.mapOhsUpstream();
       this.serviceModel.getMicroservices().add(microservice);
     }

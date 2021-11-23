@@ -51,7 +51,7 @@ import org.eclipse.xtext.xbase.lib.Pair;
  * If such an {@link ApplicationService} is not defined nothing will be done.
  */
 @SuppressWarnings("all")
-public class OpenHostServiceServiceModelGenerator {
+public class OpenHostServiceUpstreamGenerator {
   private static final String SERVICE_MODEL_IMPORT_ALIAS = "Services";
   
   private static final ServiceFactory SERVICE_FACTORY = ServiceFactory.eINSTANCE;
@@ -91,7 +91,7 @@ public class OpenHostServiceServiceModelGenerator {
   
   private final LemmaTechnologyModelFactory techFactory = new LemmaTechnologyModelFactory();
   
-  public OpenHostServiceServiceModelGenerator(final Context context, final ServiceModel serviceModel, final Microservice service, final ContextMap map, final String domainDataModelPath, final String technologyModelPath, final List<Technology> technologies) {
+  public OpenHostServiceUpstreamGenerator(final Context context, final ServiceModel serviceModel, final Microservice service, final ContextMap map, final String domainDataModelPath, final String technologyModelPath, final List<Technology> technologies) {
     this.context = context;
     this.serviceModel = serviceModel;
     this.service = service;
@@ -148,7 +148,7 @@ public class OpenHostServiceServiceModelGenerator {
    * @return Pair: Mapped Interface -> List with the used imports
    */
   private Pair<Interface, List<Import>> mapApplicationServiceToServiceInterface(final DataStructure appService, final Technology technology) {
-    final Interface interface_ = OpenHostServiceServiceModelGenerator.SERVICE_FACTORY.createInterface();
+    final Interface interface_ = OpenHostServiceUpstreamGenerator.SERVICE_FACTORY.createInterface();
     interface_.setName(appService.getName());
     final LinkedList<Import> imports = CollectionLiterals.<Import>newLinkedList();
     EList<DataOperation> _operations = appService.getOperations();
@@ -156,14 +156,14 @@ public class OpenHostServiceServiceModelGenerator {
       final Consumer<DataOperation> _function = (DataOperation appServiceOp) -> {
         final Operation serviceOp = this.mapDataOperationToServiceOperation(appServiceOp, imports);
         if ((technology != null)) {
-          final ImportedServiceAspect importedServiceAspect = OpenHostServiceServiceModelGenerator.SERVICE_FACTORY.createImportedServiceAspect();
+          final ImportedServiceAspect importedServiceAspect = OpenHostServiceUpstreamGenerator.SERVICE_FACTORY.createImportedServiceAspect();
           importedServiceAspect.setImportedAspect(this.techFactory.mapMethodNamesToServiceAspectNames(serviceOp.getName()));
           importedServiceAspect.setImport(this.returnImportForTechnology(technology));
-          final ImportedProtocolAndDataFormat importedProtocol = OpenHostServiceServiceModelGenerator.SERVICE_FACTORY.createImportedProtocolAndDataFormat();
+          final ImportedProtocolAndDataFormat importedProtocol = OpenHostServiceUpstreamGenerator.SERVICE_FACTORY.createImportedProtocolAndDataFormat();
           importedProtocol.setDataFormat(technology.getProtocols().get(0).getDataFormats().get(0));
           importedProtocol.setImportedProtocol(technology.getProtocols().get(0));
           importedProtocol.setImport(this.returnImportForTechnology(technology));
-          final Endpoint endpoint = OpenHostServiceServiceModelGenerator.SERVICE_FACTORY.createEndpoint();
+          final Endpoint endpoint = OpenHostServiceUpstreamGenerator.SERVICE_FACTORY.createEndpoint();
           EList<String> _addresses = endpoint.getAddresses();
           String _name = interface_.getName();
           String _plus = ("/" + _name);
@@ -189,7 +189,7 @@ public class OpenHostServiceServiceModelGenerator {
    * Maps LEMMA {@link DataOperation} to a {@link ReferredOperation] of a {@link ServiceInterface}
    */
   private ReferredOperation mapDataOperationToReferredOperation(final DataOperation dataOperation, final List<Import> imports) {
-    final ReferredOperation referredOperation = OpenHostServiceServiceModelGenerator.SERVICE_FACTORY.createReferredOperation();
+    final ReferredOperation referredOperation = OpenHostServiceUpstreamGenerator.SERVICE_FACTORY.createReferredOperation();
     referredOperation.setOperation(this.mapDataOperationToServiceOperation(dataOperation, imports));
     return referredOperation;
   }
@@ -198,18 +198,18 @@ public class OpenHostServiceServiceModelGenerator {
    * Maps LEMMA {@link DataOperation} to a {@link Operation] of a {@link ServiceInterface}
    */
   private Operation mapDataOperationToServiceOperation(final DataOperation dataOperation, final List<Import> imports) {
-    final Operation operation = OpenHostServiceServiceModelGenerator.SERVICE_FACTORY.createOperation();
+    final Operation operation = OpenHostServiceUpstreamGenerator.SERVICE_FACTORY.createOperation();
     operation.setName(dataOperation.getName());
     boolean _isHasNoReturnType = dataOperation.isHasNoReturnType();
     boolean _not = (!_isHasNoReturnType);
     if (_not) {
-      final Parameter returnParam = OpenHostServiceServiceModelGenerator.SERVICE_FACTORY.createParameter();
+      final Parameter returnParam = OpenHostServiceUpstreamGenerator.SERVICE_FACTORY.createParameter();
       returnParam.setName("returnParam");
       ComplexType _complexReturnType = dataOperation.getComplexReturnType();
       boolean _tripleNotEquals = (_complexReturnType != null);
       if (_tripleNotEquals) {
         returnParam.setCommunicationType(CommunicationType.SYNCHRONOUS);
-        final ImportedType importedType = OpenHostServiceServiceModelGenerator.SERVICE_FACTORY.createImportedType();
+        final ImportedType importedType = OpenHostServiceUpstreamGenerator.SERVICE_FACTORY.createImportedType();
         final Import paramTypeImport = this.returnImportForComplexType(dataOperation.getComplexReturnType());
         importedType.setImport(paramTypeImport);
         returnParam.setImportedType(importedType);
@@ -226,13 +226,13 @@ public class OpenHostServiceServiceModelGenerator {
       operation.getParameters().add(returnParam);
     }
     final Consumer<DataOperationParameter> _function = (DataOperationParameter param) -> {
-      final Parameter serviceOpParam = OpenHostServiceServiceModelGenerator.SERVICE_FACTORY.createParameter();
+      final Parameter serviceOpParam = OpenHostServiceUpstreamGenerator.SERVICE_FACTORY.createParameter();
       serviceOpParam.setName(param.getName());
       ComplexType _complexType = param.getComplexType();
       boolean _tripleNotEquals_1 = (_complexType != null);
       if (_tripleNotEquals_1) {
         serviceOpParam.setCommunicationType(CommunicationType.SYNCHRONOUS);
-        final ImportedType importedType_1 = OpenHostServiceServiceModelGenerator.SERVICE_FACTORY.createImportedType();
+        final ImportedType importedType_1 = OpenHostServiceUpstreamGenerator.SERVICE_FACTORY.createImportedType();
         final Import complexTypeImport = this.returnImportForComplexType(param.getComplexType());
         importedType_1.setImport(complexTypeImport);
         serviceOpParam.setImportedType(importedType_1);
@@ -257,7 +257,7 @@ public class OpenHostServiceServiceModelGenerator {
    * Builds a {@link Import} for a {@link ComplexType} of the {@link DataModel}
    */
   private Import returnImportForComplexType(final ComplexType cType) {
-    final Import import_ = OpenHostServiceServiceModelGenerator.SERVICE_FACTORY.createImport();
+    final Import import_ = OpenHostServiceUpstreamGenerator.SERVICE_FACTORY.createImport();
     import_.setName(cType.getName());
     String _name = cType.getName();
     String _plus = ((this.domainDataModelPath + "/") + _name);
@@ -272,7 +272,7 @@ public class OpenHostServiceServiceModelGenerator {
    * Builds a {@link Import} for a {@link ServiceAspect} of a {@link Technology}
    */
   private Import returnImportForTechnology(final Technology technology) {
-    final Import import_ = OpenHostServiceServiceModelGenerator.SERVICE_FACTORY.createImport();
+    final Import import_ = OpenHostServiceUpstreamGenerator.SERVICE_FACTORY.createImport();
     import_.setName(technology.getName());
     String _name = technology.getName();
     String _plus = ((this.technologyModelPath + "/") + _name);

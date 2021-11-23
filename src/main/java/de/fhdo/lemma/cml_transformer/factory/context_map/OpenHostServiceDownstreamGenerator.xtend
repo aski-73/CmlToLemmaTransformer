@@ -19,7 +19,7 @@ import org.eclipse.emf.ecore.util.EcoreUtil
  * Adds a new Application Service in the {@link DataModel} that represents an "Accessor". Its task is to communicate with 
  * the Api of the OHS upstream that exposes an aggregate
  */
-class OpenHostServiceDomainDataModelGenerator {
+class OpenHostServiceDownstreamGenerator {
 	static val DATA_FACTORY = DataFactory.eINSTANCE
 
 	/**

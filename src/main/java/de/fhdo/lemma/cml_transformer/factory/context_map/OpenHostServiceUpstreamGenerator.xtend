@@ -33,7 +33,7 @@ import de.fhdo.lemma.cml_transformer.Util
  * The {@link ApplicationService} must follow the naming rule "ExposedAggregate"+"API".
  * If such an {@link ApplicationService} is not defined nothing will be done.
  */
-class OpenHostServiceServiceModelGenerator {
+class OpenHostServiceUpstreamGenerator {
 	static val SERVICE_MODEL_IMPORT_ALIAS = "Services"
 
 	static val SERVICE_FACTORY = ServiceFactory.eINSTANCE

@@ -8,9 +8,9 @@ import de.fhdo.lemma.service.MicroserviceType
 import de.fhdo.lemma.service.Visibility
 import org.contextmapper.dsl.contextMappingDSL.ContextMap
 import de.fhdo.lemma.data.Context
-import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceServiceModelGenerator
 import java.util.List
 import de.fhdo.lemma.technology.Technology
+import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceUpstreamGenerator
 
 /**
  * Creates for every {@link Context} defined in LEMMA {@link DataModel} a Microservice will be generated. 
@@ -93,7 +93,7 @@ class LemmaServiceModelFactory {
 			microservice.type = mapBoundedContextTypeToServiceType(boundedContext.get.type)
 
 			// use OHS Upstream Generator to fill the microservice
-			val ohsUpstreamGenerator = new OpenHostServiceServiceModelGenerator(this.context, this.serviceModel, microservice,
+			val ohsUpstreamGenerator = new OpenHostServiceUpstreamGenerator(this.context, this.serviceModel, microservice,
 				cmlModel.map, "../domain", "../service", this.technologies)
 			ohsUpstreamGenerator.mapOhsUpstream()
 
