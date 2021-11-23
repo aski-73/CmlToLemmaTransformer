@@ -1,6 +1,6 @@
 package de.fhdo.lemma.cml_transformer.factory.context_map;
 
-import com.google.common.base.Objects;
+import de.fhdo.lemma.cml_transformer.Util;
 import de.fhdo.lemma.cml_transformer.factory.LemmaTechnologyModelFactory;
 import de.fhdo.lemma.data.ComplexType;
 import de.fhdo.lemma.data.Context;
@@ -64,6 +64,12 @@ public class OpenHostServiceServiceModelGenerator {
   private Context context;
   
   /**
+   * List of LEMMA {@link Technology}-Model. Newly created technologies that are identified
+   * by the implementationTechnology key word will be put in here
+   */
+  private List<Technology> technologies;
+  
+  /**
    * The service model that contains the microservice. Needed in order to add the imports
    */
   private ServiceModel serviceModel;
@@ -85,13 +91,14 @@ public class OpenHostServiceServiceModelGenerator {
   
   private final LemmaTechnologyModelFactory techFactory = new LemmaTechnologyModelFactory();
   
-  public OpenHostServiceServiceModelGenerator(final Context context, final ServiceModel serviceModel, final Microservice service, final ContextMap map, final String domainDataModelPath, final String technologyModelPath) {
+  public OpenHostServiceServiceModelGenerator(final Context context, final ServiceModel serviceModel, final Microservice service, final ContextMap map, final String domainDataModelPath, final String technologyModelPath, final List<Technology> technologies) {
     this.context = context;
     this.serviceModel = serviceModel;
     this.service = service;
     this.map = map;
     this.domainDataModelPath = domainDataModelPath;
     this.technologyModelPath = technologyModelPath;
+    this.technologies = technologies;
   }
   
   /**
@@ -123,6 +130,11 @@ public class OpenHostServiceServiceModelGenerator {
           final Pair<Interface, List<Import>> interfaceImportPair = this.mapApplicationServiceToServiceInterface(((DataStructure) _get), technology);
           this.service.getInterfaces().add(interfaceImportPair.getKey());
           this.serviceModel.getImports().addAll(interfaceImportPair.getValue());
+          boolean _technologyExists = Util.technologyExists(this.technologies, technology);
+          boolean _not = (!_technologyExists);
+          if (_not) {
+            this.technologies.add(technology);
+          }
         }
       };
       ((UpstreamDownstreamRelationship) rel).getUpstreamExposedAggregates().stream().forEach(_function);
@@ -160,7 +172,7 @@ public class OpenHostServiceServiceModelGenerator {
           serviceOp.getEndpoints().add(endpoint);
           serviceOp.getAspects().add(importedServiceAspect);
           final Import technologyImport = this.returnImportForTechnology(technology);
-          boolean _importExists = this.importExists(imports, technologyImport);
+          boolean _importExists = Util.importExists(imports, technologyImport);
           boolean _not = (!_importExists);
           if (_not) {
             imports.add(technologyImport);
@@ -202,7 +214,7 @@ public class OpenHostServiceServiceModelGenerator {
         importedType.setImport(paramTypeImport);
         returnParam.setImportedType(importedType);
         final Import paramTypeImportClone = EcoreUtil.<Import>copy(paramTypeImport);
-        boolean _importExists = this.importExists(imports, paramTypeImportClone);
+        boolean _importExists = Util.importExists(imports, paramTypeImportClone);
         boolean _not_1 = (!_importExists);
         if (_not_1) {
           imports.add(paramTypeImportClone);
@@ -227,7 +239,7 @@ public class OpenHostServiceServiceModelGenerator {
         ImportedType _importedType = serviceOpParam.getImportedType();
         _importedType.setType(param.getComplexType());
         final Import complexTypeImportClone = EcoreUtil.<Import>copy(complexTypeImport);
-        boolean _importExists_1 = this.importExists(imports, complexTypeImportClone);
+        boolean _importExists_1 = Util.importExists(imports, complexTypeImportClone);
         boolean _not_2 = (!_importExists_1);
         if (_not_2) {
           imports.add(complexTypeImportClone);
@@ -286,14 +298,5 @@ public class OpenHostServiceServiceModelGenerator {
       return ((UpstreamDownstreamRelationship) rel).getUpstreamRoles().contains(UpstreamRole.OPEN_HOST_SERVICE);
     };
     return this.map.getRelationships().stream().filter(_function).filter(_function_1).filter(_function_2).collect(Collectors.<Relationship>toList());
-  }
-  
-  private boolean importExists(final List<Import> imports, final Import im) {
-    for (final Import tempIm : imports) {
-      if ((Objects.equal(tempIm.getImportType(), im.getImportType()) && tempIm.getImportURI().equals(im.getImportURI()))) {
-        return true;
-      }
-    }
-    return false;
   }
 }

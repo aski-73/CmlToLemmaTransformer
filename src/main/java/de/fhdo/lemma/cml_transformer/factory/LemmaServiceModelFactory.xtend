@@ -9,6 +9,8 @@ import de.fhdo.lemma.service.Visibility
 import org.contextmapper.dsl.contextMappingDSL.ContextMap
 import de.fhdo.lemma.data.Context
 import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceServiceModelGenerator
+import java.util.List
+import de.fhdo.lemma.technology.Technology
 
 /**
  * Creates for every {@link Context} defined in LEMMA {@link DataModel} a Microservice will be generated. 
@@ -62,10 +64,17 @@ class LemmaServiceModelFactory {
 	 * Output Model (SML)
 	 */
 	private ServiceModel serviceModel
+		
+		
+	/**
+	 * Created {@link Technology}s will be put in here
+	 */
+	private List<Technology> technologies
 
-	new(ContextMappingModel cmlModel, Context context) {
+	new(ContextMappingModel cmlModel, Context context, List<Technology> technologies) {
 		this.cmlModel = cmlModel
 		this.context = context
+		this.technologies = technologies
 	}
 
 	def ServiceModel buildServiceModel() {
@@ -85,7 +94,7 @@ class LemmaServiceModelFactory {
 
 			// use OHS Upstream Generator to fill the microservice
 			val ohsUpstreamGenerator = new OpenHostServiceServiceModelGenerator(this.context, this.serviceModel, microservice,
-				cmlModel.map, "../domain", "../service")
+				cmlModel.map, "../domain", "../service", this.technologies)
 			ohsUpstreamGenerator.mapOhsUpstream()
 
 			this.serviceModel.microservices.add(microservice)

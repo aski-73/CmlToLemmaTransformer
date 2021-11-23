@@ -15,6 +15,9 @@ import org.jetbrains.annotations.NotNull
 import de.fhdo.lemma.cml_transformer.factory.LemmaServiceModelFactory
 import de.fhdo.lemma.cml_transformer.code_generators.ServiceDslExtractor
 import de.fhdo.lemma.cml_transformer.code_generators.DataDslExtractor
+import de.fhdo.lemma.technology.Technology
+import de.fhdo.lemma.technology.services.TechnologyDslGrammarAccess.TechnologyElements
+import de.fhdo.lemma.cml_transformer.code_generators.TechnologyDslExtractor
 
 /** 
  * LEMMA's model processing framework supports model-based structuring of code
@@ -74,12 +77,25 @@ import de.fhdo.lemma.cml_transformer.code_generators.DataDslExtractor
 		val dataExtractor = new DataDslExtractor()
 		System.out.println(dataExtractor.extractToString(lemmaDataModel))
 		
+		/* 
+		 * Technologies are created with the {@link LemmaTechnologyFactory} which is used
+		 * in the {@link LemmaServiceModelFactory}. 
+		 * This list keeps track of all created technologies in order to put them into separate files.
+		 */
+		 val technologies = <Technology> newLinkedList
+		
 		/* For every context of the dataModel instantiate a Lemma SML by using a factory */
 		for (context: lemmaDataModel.contexts) {
-			val serviceModelFactory = new LemmaServiceModelFactory(cmlModel, context)
+			val serviceModelFactory = new LemmaServiceModelFactory(cmlModel, context, technologies)
 			val serviceModel = serviceModelFactory.buildServiceModel()
 			val serviceExtractor = new ServiceDslExtractor()
 			System.out.println(serviceExtractor.extractToString(serviceModel))
+		}
+		
+		/* Every created Technology Model will be put in a separate file */
+		val technologyExtractor = new TechnologyDslExtractor()
+		for (technology: technologies) {
+			System.out.println(technologyExtractor.extractToString(technology))
 		}
 		
 		

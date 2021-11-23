@@ -7,7 +7,9 @@ import de.fhdo.lemma.service.MicroserviceType;
 import de.fhdo.lemma.service.ServiceFactory;
 import de.fhdo.lemma.service.ServiceModel;
 import de.fhdo.lemma.service.Visibility;
+import de.fhdo.lemma.technology.Technology;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import org.contextmapper.dsl.contextMappingDSL.BoundedContext;
@@ -101,9 +103,15 @@ public class LemmaServiceModelFactory {
    */
   private ServiceModel serviceModel;
   
-  public LemmaServiceModelFactory(final ContextMappingModel cmlModel, final Context context) {
+  /**
+   * Created {@link Technology}s will be put in here
+   */
+  private List<Technology> technologies;
+  
+  public LemmaServiceModelFactory(final ContextMappingModel cmlModel, final Context context, final List<Technology> technologies) {
     this.cmlModel = cmlModel;
     this.context = context;
+    this.technologies = technologies;
   }
   
   public ServiceModel buildServiceModel() {
@@ -122,7 +130,7 @@ public class LemmaServiceModelFactory {
       microservice.setVisibility(LemmaServiceModelFactory.mapBoundedContextTypeToServiceVisibility(boundedContext.get().getType()));
       microservice.setType(LemmaServiceModelFactory.mapBoundedContextTypeToServiceType(boundedContext.get().getType()));
       ContextMap _map = this.cmlModel.getMap();
-      final OpenHostServiceServiceModelGenerator ohsUpstreamGenerator = new OpenHostServiceServiceModelGenerator(this.context, this.serviceModel, microservice, _map, "../domain", "../service");
+      final OpenHostServiceServiceModelGenerator ohsUpstreamGenerator = new OpenHostServiceServiceModelGenerator(this.context, this.serviceModel, microservice, _map, "../domain", "../service", this.technologies);
       ohsUpstreamGenerator.mapOhsUpstream();
       this.serviceModel.getMicroservices().add(microservice);
     }

@@ -24,6 +24,7 @@ import org.contextmapper.dsl.contextMappingDSL.UpstreamRole
 import java.util.List
 import de.fhdo.lemma.service.ServiceModel
 import org.eclipse.emf.ecore.util.EcoreUtil
+import de.fhdo.lemma.cml_transformer.Util
 
 /**
  * Upstream implementation of an OHS
@@ -42,6 +43,12 @@ class OpenHostServiceServiceModelGenerator {
 	 * Mapped LEMMA DML {@link Context} for which a Microservice will be generated
 	 */
 	private Context context
+	
+	/**
+	 * List of LEMMA {@link Technology}-Model. Newly created technologies that are identified
+	 * by the implementationTechnology key word will be put in here
+	 */
+	private List<Technology> technologies
 
 	/**
 	 * The service model that contains the microservice. Needed in order to add the imports
@@ -71,7 +78,8 @@ class OpenHostServiceServiceModelGenerator {
 		Microservice service,
 		ContextMap map,
 		String domainDataModelPath,
-		String technologyModelPath
+		String technologyModelPath,
+		List<Technology> technologies
 	) {
 		this.context = context
 		this.serviceModel = serviceModel
@@ -79,6 +87,7 @@ class OpenHostServiceServiceModelGenerator {
 		this.map = map
 		this.domainDataModelPath = domainDataModelPath
 		this.technologyModelPath = technologyModelPath
+		this.technologies = technologies
 	}
 
 	/**
@@ -115,6 +124,11 @@ class OpenHostServiceServiceModelGenerator {
 					// Put the created interface in the service model
 					this.service.interfaces.add(interfaceImportPair.key)
 					this.serviceModel.imports.addAll(interfaceImportPair.value)
+					
+					if (!Util.technologyExists(this.technologies, technology)) {
+						this.technologies.add(technology)
+					}
+					
 				}
 			]
 		}
@@ -156,7 +170,7 @@ class OpenHostServiceServiceModelGenerator {
 				serviceOp.aspects.add(importedServiceAspect)
 					
 				val technologyImport = technology.returnImportForTechnology
-				if (!imports.importExists(technologyImport)) {
+				if (!Util.importExists(imports, technologyImport)) {
 					imports.add(technologyImport)	
 				}
 			}
@@ -197,7 +211,7 @@ class OpenHostServiceServiceModelGenerator {
 				
 				// Need a deep copy because xcore models must contain unique objects
 				val paramTypeImportClone = EcoreUtil.copy(paramTypeImport)
-				if (!imports.importExists(paramTypeImportClone)) {
+				if (!Util.importExists(imports, paramTypeImportClone)) {
 					imports.add(paramTypeImportClone)
 				}
 			} else { // Primitive
@@ -221,7 +235,7 @@ class OpenHostServiceServiceModelGenerator {
 				
 				// Need a deep copy because xcore models must contain unique objects
 				val complexTypeImportClone = EcoreUtil.copy(complexTypeImport)
-				if (!imports.importExists(complexTypeImportClone)) {
+				if (!Util.importExists(imports, complexTypeImportClone)) {
 					imports.add(complexTypeImportClone)
 				}
 			} else { // Primitive
@@ -269,15 +283,5 @@ class OpenHostServiceServiceModelGenerator {
 		]).filter([ rel |
 			(rel as UpstreamDownstreamRelationship).upstreamRoles.contains(UpstreamRole.OPEN_HOST_SERVICE)
 		]).collect(Collectors.toList())
-	}
-	
-	private def importExists (List<Import> imports, Import im)  {
-		for (Import tempIm: imports) {
-			if (tempIm.importType == im.importType && tempIm.importURI.equals(im.importURI)) {
-				return true
-			}
-		}
-		
-		return false
 	}
 }

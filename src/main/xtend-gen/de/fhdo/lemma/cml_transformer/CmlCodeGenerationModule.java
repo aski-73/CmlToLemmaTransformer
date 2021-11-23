@@ -2,6 +2,7 @@ package de.fhdo.lemma.cml_transformer;
 
 import de.fhdo.lemma.cml_transformer.code_generators.DataDslExtractor;
 import de.fhdo.lemma.cml_transformer.code_generators.ServiceDslExtractor;
+import de.fhdo.lemma.cml_transformer.code_generators.TechnologyDslExtractor;
 import de.fhdo.lemma.cml_transformer.factory.LemmaDomainDataModelFactory;
 import de.fhdo.lemma.cml_transformer.factory.LemmaServiceModelFactory;
 import de.fhdo.lemma.data.Context;
@@ -9,10 +10,12 @@ import de.fhdo.lemma.data.DataModel;
 import de.fhdo.lemma.model_processing.annotations.CodeGenerationModule;
 import de.fhdo.lemma.model_processing.builtin_phases.code_generation.AbstractCodeGenerationModule;
 import de.fhdo.lemma.service.ServiceModel;
+import de.fhdo.lemma.technology.Technology;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 import kotlin.Pair;
 import org.contextmapper.dsl.contextMappingDSL.ContextMappingDSLPackage;
@@ -20,6 +23,7 @@ import org.contextmapper.dsl.contextMappingDSL.ContextMappingModel;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.xtend2.lib.StringConcatenation;
+import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -77,14 +81,19 @@ public class CmlCodeGenerationModule extends AbstractCodeGenerationModule {
     final DataModel lemmaDataModel = factory.generateDataModel();
     final DataDslExtractor dataExtractor = new DataDslExtractor();
     System.out.println(dataExtractor.extractToString(lemmaDataModel));
+    final LinkedList<Technology> technologies = CollectionLiterals.<Technology>newLinkedList();
     EList<Context> _contexts = lemmaDataModel.getContexts();
     for (final Context context : _contexts) {
       {
-        final LemmaServiceModelFactory serviceModelFactory = new LemmaServiceModelFactory(cmlModel, context);
+        final LemmaServiceModelFactory serviceModelFactory = new LemmaServiceModelFactory(cmlModel, context, technologies);
         final ServiceModel serviceModel = serviceModelFactory.buildServiceModel();
         final ServiceDslExtractor serviceExtractor = new ServiceDslExtractor();
         System.out.println(serviceExtractor.extractToString(serviceModel));
       }
+    }
+    final TechnologyDslExtractor technologyExtractor = new TechnologyDslExtractor();
+    for (final Technology technology : technologies) {
+      System.out.println(technologyExtractor.extractToString(technology));
     }
     StringConcatenation _builder = new StringConcatenation();
     String _targetFolder = this.getTargetFolder();
