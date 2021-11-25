@@ -8,7 +8,6 @@ import de.fhdo.lemma.data.DataModel;
 import de.fhdo.lemma.data.DataOperation;
 import de.fhdo.lemma.data.DataOperationParameter;
 import de.fhdo.lemma.data.DataStructure;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -27,7 +26,6 @@ import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.xtend.lib.annotations.Data;
 import org.eclipse.xtend2.lib.StringConcatenation;
-import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Pure;
 import org.eclipse.xtext.xbase.lib.util.ToStringBuilder;
 
@@ -144,7 +142,6 @@ public class AnticorruptionLayerGenerator {
     }
     Relationship _get = rr.get(0);
     final BoundedContext cmlDownstreamContext = ((UpstreamDownstreamRelationship) _get).getDownstream();
-    final LinkedList<DataStructure> translators = CollectionLiterals.<DataStructure>newLinkedList();
     final Consumer<Relationship> _function = (Relationship rel) -> {
       final BoundedContext cmlUpstreamContext = ((UpstreamDownstreamRelationship) rel).getUpstream();
       final Predicate<Context> _function_1 = (Context ctx) -> {
@@ -181,7 +178,10 @@ public class AnticorruptionLayerGenerator {
           boolean _equals_1 = exposedAgg.getName().equals(obj.getHint());
           if (_equals_1) {
             final Predicate<ComplexType> _function_6 = (ComplexType cType) -> {
-              return cType.getName().equals(exposedAgg.getName());
+              String _name_1 = cType.getName();
+              String _name_2 = exposedAgg.getName();
+              String _plus = (_name_2 + "Dto");
+              return _name_1.equals(_plus);
             };
             final ComplexType x = lemmaUpstreamContext.get().getComplexTypes().stream().filter(_function_6).findAny().get();
             final Predicate<ComplexType> _function_7 = (ComplexType cType) -> {

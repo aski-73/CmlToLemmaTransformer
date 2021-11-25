@@ -58,8 +58,6 @@ class AnticorruptionLayerGenerator {
 		// CML Bounded Context. Get any downstream of the rr-Array since all are the same
 		val cmlDownstreamContext = (rr.get(0) as UpstreamDownstreamRelationship).downstream
 
-		val translators = <DataStructure>newLinkedList
-
 		rr.stream.forEach([ rel |
 			val cmlUpstreamContext = (rel as UpstreamDownstreamRelationship).upstream
 			// Filter the matching LEMMA context. Use findAny because only one will be found at most
@@ -69,7 +67,7 @@ class AnticorruptionLayerGenerator {
 				return
 			}
 			
-			cmlDownstreamContext.aggregates.stream.flatMap([agg|agg.domainObjects.stream]) // put all domain objects of all aggregates in one stream
+			cmlDownstreamContext.aggregates.stream.flatMap([agg|agg.domainObjects.stream]) // put all domain objects in one stream
 			.filter([obj|obj.hint !== null && obj.hint.startsWith(DownstreamRole.ANTICORRUPTION_LAYER.literal + ":")]) // domain object has a hint starting with "ACL:"
 			.map([ obj | // remove "ACL:" prefix => we get the desired source aggregate (X)
 				obj.hint = obj.hint.replace(DownstreamRole.ANTICORRUPTION_LAYER.literal + ":", "")
@@ -82,7 +80,7 @@ class AnticorruptionLayerGenerator {
 						// been mapped by the LemmaDomainDataModelFactory previously. Therefore the next steps
 						// will use the LEMMA Domain Objects in order to work with the already mapped types.
 						// Find X in the LEMMA upstream context and Y in the LEMMA downstream context and put them in a container object
-						val x = lemmaUpstreamContext.get.complexTypes.stream.filter([cType| cType.name.equals(exposedAgg.name)]).findAny.get
+						val x = lemmaUpstreamContext.get.complexTypes.stream.filter([cType| cType.name.equals(exposedAgg.name + "Dto")]).findAny.get
 						val y = this.context.complexTypes.stream.filter([cType| cType.name.equals(obj.name)]).findAny.get
 						return new FromTo(x as DataStructure, y as DataStructure)
 					}
@@ -115,7 +113,7 @@ class AnticorruptionLayerGenerator {
 				// Add translator into the LEMMA Context
 				this.context.complexTypes.add(aclTranslator)
 			])
-		]);
+		])
 	}
 
 	/**

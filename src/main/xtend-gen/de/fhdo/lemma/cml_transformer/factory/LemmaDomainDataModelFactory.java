@@ -2,6 +2,7 @@ package de.fhdo.lemma.cml_transformer.factory;
 
 import com.google.common.base.Objects;
 import de.fhdo.lemma.cml_transformer.factory.context_map.AnticorruptionLayerGenerator;
+import de.fhdo.lemma.cml_transformer.factory.context_map.ConformistGenerator;
 import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceDownstreamGenerator;
 import de.fhdo.lemma.data.ComplexType;
 import de.fhdo.lemma.data.ComplexTypeFeature;
@@ -15,7 +16,6 @@ import de.fhdo.lemma.data.DataOperationParameter;
 import de.fhdo.lemma.data.DataStructure;
 import de.fhdo.lemma.data.Enumeration;
 import de.fhdo.lemma.data.EnumerationField;
-import de.fhdo.lemma.data.ImportedComplexType;
 import de.fhdo.lemma.data.ListType;
 import de.fhdo.lemma.data.PrimitiveType;
 import java.util.Arrays;
@@ -40,7 +40,10 @@ import org.contextmapper.tactic.dsl.tacticdsl.ServiceOperation;
 import org.contextmapper.tactic.dsl.tacticdsl.SimpleDomainObject;
 import org.contextmapper.tactic.dsl.tacticdsl.ValueObject;
 import org.eclipse.emf.common.util.EList;
+import org.eclipse.xtend.lib.annotations.AccessorType;
+import org.eclipse.xtend.lib.annotations.Accessors;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
+import org.eclipse.xtext.xbase.lib.Pure;
 import org.eclipse.xtext.xbase.lib.StringExtensions;
 
 /**
@@ -50,50 +53,35 @@ import org.eclipse.xtext.xbase.lib.StringExtensions;
 public class LemmaDomainDataModelFactory {
   private static final DataFactory DATA_FACTORY = DataFactory.eINSTANCE;
   
-  public static DataOperation clone(final DataOperation operation) {
-    final DataOperation clonedOperation = LemmaDomainDataModelFactory.DATA_FACTORY.createDataOperation();
-    clonedOperation.setName(operation.getName());
-    EList<DataOperationParameter> _parameters = operation.getParameters();
-    for (final DataOperationParameter opParam : _parameters) {
-      clonedOperation.getParameters().add(LemmaDomainDataModelFactory.clone(opParam));
-    }
-    boolean _isHasNoReturnType = operation.isHasNoReturnType();
-    boolean _not = (!_isHasNoReturnType);
-    if (_not) {
-      ComplexType _complexReturnType = operation.getComplexReturnType();
-      boolean _tripleNotEquals = (_complexReturnType != null);
-      if (_tripleNotEquals) {
-        clonedOperation.setComplexReturnType(operation.getComplexReturnType());
-      } else {
-        ImportedComplexType _importedComplexReturnType = operation.getImportedComplexReturnType();
-        boolean _tripleNotEquals_1 = (_importedComplexReturnType != null);
-        if (_tripleNotEquals_1) {
-          clonedOperation.setImportedComplexReturnType(operation.getImportedComplexReturnType());
-        } else {
-          clonedOperation.setPrimitiveReturnType(operation.getPrimitiveReturnType());
-        }
+  /**
+   * Maps CML {@link Aggregate} to LEMMA DML {@link ComplexType}s.
+   * 
+   * Since CML aggregates all Domain Services, Entities and Value Objects, we need to extract those and put
+   * them in a list in order to add them into the Lemma {@link Context}.
+   * 
+   * Static variant of the method {@link LemmaDomainDataModelFactory#mapAggregate2ComplexType} in order
+   * to map a single CML {@link Aggregate}.
+   */
+  public static List<ComplexType> mapAggregate2ComplexType(final ContextMappingModel cmlModel, final Aggregate agg) {
+    final LemmaDomainDataModelFactory dataModelFactory = new LemmaDomainDataModelFactory(cmlModel);
+    dataModelFactory.dataModel = LemmaDomainDataModelFactory.DATA_FACTORY.createDataModel();
+    final LinkedList<ComplexType> dataStructures = CollectionLiterals.<ComplexType>newLinkedList();
+    final Context ctx = LemmaDomainDataModelFactory.DATA_FACTORY.createContext();
+    EList<SimpleDomainObject> _domainObjects = agg.getDomainObjects();
+    for (final SimpleDomainObject obj : _domainObjects) {
+      {
+        final ComplexType lemmaStructure = dataModelFactory.mapSimpleDomainObject2ComplexType(obj, ctx);
+        dataStructures.add(lemmaStructure);
       }
     }
-    return clonedOperation;
-  }
-  
-  public static DataOperationParameter clone(final DataOperationParameter param) {
-    final DataOperationParameter clonedParam = LemmaDomainDataModelFactory.DATA_FACTORY.createDataOperationParameter();
-    clonedParam.setName(param.getName());
-    ComplexType _complexType = param.getComplexType();
-    boolean _tripleNotEquals = (_complexType != null);
-    if (_tripleNotEquals) {
-      clonedParam.setComplexType(param.getComplexType());
-    } else {
-      ImportedComplexType _importedComplexType = param.getImportedComplexType();
-      boolean _tripleNotEquals_1 = (_importedComplexType != null);
-      if (_tripleNotEquals_1) {
-        clonedParam.setImportedComplexType(param.getImportedComplexType());
-      } else {
-        clonedParam.setPrimitiveType(param.getPrimitiveType());
+    EList<Service> _services = agg.getServices();
+    for (final Service service : _services) {
+      {
+        final ComplexType lemmaDomainService = dataModelFactory.mapServiceToComplexType(service, true, ctx);
+        dataStructures.add(lemmaDomainService);
       }
     }
-    return clonedParam;
+    return dataStructures;
   }
   
   /**
@@ -107,16 +95,12 @@ public class LemmaDomainDataModelFactory {
   private DataModel dataModel;
   
   /**
-   * Helper for tracking the created ComplexTypes in a context
-   */
-  private Context currentCtx;
-  
-  /**
    * Keeps track of lists that must be generated. LEMMA DML needs extra list types with an own declaration for each
    * kind of list (primitive list, complex type list etc.)
    * {@link ListType}s are not put directly into the List of {@link ComplexType}s of a {@link Context} in order to make
    * a check for already created {@link ListType}s easier and faster.
    */
+  @Accessors(AccessorType.PUBLIC_GETTER)
   private List<ListType> listsToGenerate = CollectionLiterals.<ListType>newLinkedList();
   
   public LemmaDomainDataModelFactory(final ContextMappingModel cmlModel) {
@@ -127,6 +111,7 @@ public class LemmaDomainDataModelFactory {
    * Maps CML Model {@link ContextMappingModel} to LEMMA DML Model {@link DataModel}
    */
   public DataModel generateDataModel() {
+    this.listsToGenerate = CollectionLiterals.<ListType>newLinkedList();
     this.dataModel = LemmaDomainDataModelFactory.DATA_FACTORY.createDataModel();
     final Consumer<BoundedContext> _function = (BoundedContext bc) -> {
       final Context ctx = this.mapBoundedContext2Context(bc);
@@ -151,6 +136,14 @@ public class LemmaDomainDataModelFactory {
         aclGenerator.mapAcl();
       }
     }
+    EList<Context> _contexts_2 = this.dataModel.getContexts();
+    for (final Context ctx_2 : _contexts_2) {
+      {
+        LemmaDomainDataModelFactory _lemmaDomainDataModelFactory = new LemmaDomainDataModelFactory(this.cmlModel);
+        final ConformistGenerator cofGenerator = new ConformistGenerator(ctx_2, this.cmlModel, _lemmaDomainDataModelFactory);
+        cofGenerator.mapCof();
+      }
+    }
     return this.dataModel;
   }
   
@@ -160,12 +153,11 @@ public class LemmaDomainDataModelFactory {
   private Context mapBoundedContext2Context(final BoundedContext bc) {
     final Context ctx = LemmaDomainDataModelFactory.DATA_FACTORY.createContext();
     ctx.setName(bc.getName());
-    this.currentCtx = ctx;
     EList<Aggregate> _aggregates = bc.getAggregates();
     boolean _tripleNotEquals = (_aggregates != null);
     if (_tripleNotEquals) {
       final Consumer<Aggregate> _function = (Aggregate agg) -> {
-        final List<ComplexType> dataStructures = this.mapAggregate2ComplexType(agg);
+        final List<ComplexType> dataStructures = this.mapAggregate2ComplexType(agg, ctx);
         final Consumer<ComplexType> _function_1 = (ComplexType struct) -> {
           struct.setContext(ctx);
           ctx.getComplexTypes().add(struct);
@@ -178,13 +170,12 @@ public class LemmaDomainDataModelFactory {
     boolean _tripleNotEquals_1 = (_application != null);
     if (_tripleNotEquals_1) {
       final Consumer<Service> _function_1 = (Service appService) -> {
-        final ComplexType lemmaAppService = this.mapServiceToComplexType(appService, false);
+        final ComplexType lemmaAppService = this.mapServiceToComplexType(appService, false, ctx);
         ctx.getComplexTypes().add(lemmaAppService);
       };
       bc.getApplication().getServices().forEach(_function_1);
     }
-    this.currentCtx.getComplexTypes().addAll(this.listsToGenerate);
-    this.listsToGenerate = CollectionLiterals.<ListType>newLinkedList();
+    ctx.getComplexTypes().addAll(this.listsToGenerate);
     return ctx;
   }
   
@@ -193,20 +184,23 @@ public class LemmaDomainDataModelFactory {
    * 
    * Since CML aggregates all Domain Services, Entities and Value Objects, we need to extract those and put
    * them in a list in order to add them into the Lemma {@link Context}
+   * 
+   * @param agg CML {@link Aggregate} to map
+   * @param ctx LEMMA {@link Context} which is needed for already checked domain objects
    */
-  private List<ComplexType> mapAggregate2ComplexType(final Aggregate agg) {
+  private List<ComplexType> mapAggregate2ComplexType(final Aggregate agg, final Context ctx) {
     final LinkedList<ComplexType> dataStructures = CollectionLiterals.<ComplexType>newLinkedList();
     EList<SimpleDomainObject> _domainObjects = agg.getDomainObjects();
     for (final SimpleDomainObject obj : _domainObjects) {
       {
-        final ComplexType lemmaStructure = this.mapSimpleDomainObject2ComplexType(obj);
+        final ComplexType lemmaStructure = this.mapSimpleDomainObject2ComplexType(obj, ctx);
         dataStructures.add(lemmaStructure);
       }
     }
     EList<Service> _services = agg.getServices();
     for (final Service service : _services) {
       {
-        final ComplexType lemmaDomainService = this.mapServiceToComplexType(service, true);
+        final ComplexType lemmaDomainService = this.mapServiceToComplexType(service, true, ctx);
         dataStructures.add(lemmaDomainService);
       }
     }
@@ -218,17 +212,19 @@ public class LemmaDomainDataModelFactory {
    * to a LEMMA {@link ComplexType}.
    * In other words it creates DataStructures and Enums depending on the given {@link SimpleDomainObject}
    */
-  private ComplexType mapSimpleDomainObject2ComplexType(final SimpleDomainObject sObj) {
-    return this.mapDomainObject2ConcreteComplexType(sObj);
+  private ComplexType mapSimpleDomainObject2ComplexType(final SimpleDomainObject sObj, final Context ctx) {
+    return this.mapDomainObject2ConcreteComplexType(sObj, ctx);
   }
   
   /**
-   * Maps CML {@link ValueObject} and {@link Entity} to LEMMA DML {@link DataStructure}
+   * Maps CML {@link ValueObject} and {@link Entity} to LEMMA DML {@link DataStructure}.
+   * 
+   * @param obj CML {@link DomainObject} to map
+   * @param ctx LEMMA {@link Context} which is needed for already checked domain objects
    */
-  private ComplexType _mapDomainObject2ConcreteComplexType(final DomainObject obj) {
-    final ComplexType alreadyMappedType = this.alreadyMapped(obj);
-    boolean _notEquals = (!Objects.equal(alreadyMappedType, null));
-    if (_notEquals) {
+  private ComplexType _mapDomainObject2ConcreteComplexType(final DomainObject obj, final Context ctx) {
+    final ComplexType alreadyMappedType = this.alreadyMapped(obj, ctx);
+    if ((alreadyMappedType != null)) {
       return alreadyMappedType;
     }
     final DataStructure lemmaStructure = this.createDataStructure(obj.getName());
@@ -263,13 +259,13 @@ public class LemmaDomainDataModelFactory {
       final DataField field = LemmaDomainDataModelFactory.DATA_FACTORY.createDataField();
       field.setName(ref.getName());
       field.setImmutable(ref.isNotChangeable());
-      field.setComplexType(this.mapReferenceTypeToComplexType(ref, field));
+      field.setComplexType(this.mapReferenceTypeToComplexType(ref, field, ctx));
       field.setDataStructure(lemmaStructure);
       lemmaStructure.getDataFields().add(field);
     };
     obj.getReferences().forEach(_function_1);
     final Consumer<DomainObjectOperation> _function_2 = (DomainObjectOperation op) -> {
-      final DataOperation lemmaOp = this.mapDomainObjectOperationToDataOperation(op);
+      final DataOperation lemmaOp = this.mapDomainObjectOperationToDataOperation(op, ctx);
       lemmaStructure.getOperations().add(lemmaOp);
       lemmaOp.setDataStructure(lemmaStructure);
     };
@@ -280,7 +276,7 @@ public class LemmaDomainDataModelFactory {
   /**
    * Maps CML {@link Enum} to LEMMA DML {@link Enumeration}
    */
-  private ComplexType _mapDomainObject2ConcreteComplexType(final org.contextmapper.tactic.dsl.tacticdsl.Enum obj) {
+  private ComplexType _mapDomainObject2ConcreteComplexType(final org.contextmapper.tactic.dsl.tacticdsl.Enum obj, final Context ctx) {
     final Enumeration lemmaEnum = this.createEnumeration(obj.getName());
     final Consumer<EnumValue> _function = (EnumValue enumValue) -> {
       lemmaEnum.getFields().add(this.createEnumerationField(enumValue.getName()));
@@ -292,7 +288,7 @@ public class LemmaDomainDataModelFactory {
   /**
    * Maps CML {@link ServiceOperation} to LEMMA DML {@link DataOperation}
    */
-  private DataOperation mapDomainObjectOperationToDataOperation(final ServiceOperation cmlOp) {
+  private DataOperation mapDomainObjectOperationToDataOperation(final ServiceOperation cmlOp, final Context ctx) {
     final DataOperation lemmaOp = LemmaDomainDataModelFactory.DATA_FACTORY.createDataOperation();
     lemmaOp.setName(cmlOp.getName());
     org.contextmapper.tactic.dsl.tacticdsl.ComplexType _returnType = cmlOp.getReturnType();
@@ -301,7 +297,7 @@ public class LemmaDomainDataModelFactory {
       lemmaOp.setHasNoReturnType(true);
     } else {
       if (((cmlOp.getReturnType().getCollectionType() == CollectionType.LIST) || (cmlOp.getReturnType().getDomainObjectType() != null))) {
-        lemmaOp.setComplexReturnType(this.mapComplexTypes(cmlOp.getReturnType()));
+        lemmaOp.setComplexReturnType(this.mapComplexTypes(cmlOp.getReturnType(), ctx));
       } else {
         lemmaOp.setPrimitiveReturnType(this.mapPrimitiveType(cmlOp.getReturnType().getType()));
       }
@@ -311,7 +307,7 @@ public class LemmaDomainDataModelFactory {
       lemmaParam.setName(param.getName());
       if (((param.getParameterType().getCollectionType() == CollectionType.LIST) || 
         (param.getParameterType().getDomainObjectType() != null))) {
-        lemmaParam.setComplexType(this.mapComplexTypes(param.getParameterType()));
+        lemmaParam.setComplexType(this.mapComplexTypes(param.getParameterType(), ctx));
       } else {
         lemmaParam.setPrimitiveType(this.mapPrimitiveType(param.getParameterType().getType()));
       }
@@ -324,7 +320,7 @@ public class LemmaDomainDataModelFactory {
   /**
    * Maps CML {@link DomainObjectOperation} to LEMMA DML {@link DataOperation}
    */
-  private DataOperation mapDomainObjectOperationToDataOperation(final DomainObjectOperation cmlOp) {
+  private DataOperation mapDomainObjectOperationToDataOperation(final DomainObjectOperation cmlOp, final Context ctx) {
     final DataOperation lemmaOp = LemmaDomainDataModelFactory.DATA_FACTORY.createDataOperation();
     lemmaOp.setName(cmlOp.getName());
     org.contextmapper.tactic.dsl.tacticdsl.ComplexType _returnType = cmlOp.getReturnType();
@@ -335,7 +331,7 @@ public class LemmaDomainDataModelFactory {
       SimpleDomainObject _domainObjectType = cmlOp.getReturnType().getDomainObjectType();
       boolean _tripleNotEquals = (_domainObjectType != null);
       if (_tripleNotEquals) {
-        lemmaOp.setComplexReturnType(this.mapComplexTypes(cmlOp.getReturnType()));
+        lemmaOp.setComplexReturnType(this.mapComplexTypes(cmlOp.getReturnType(), ctx));
       } else {
         lemmaOp.setPrimitiveReturnType(this.mapPrimitiveType(cmlOp.getReturnType().getType()));
       }
@@ -346,7 +342,7 @@ public class LemmaDomainDataModelFactory {
       SimpleDomainObject _domainObjectType_1 = param.getParameterType().getDomainObjectType();
       boolean _tripleNotEquals_1 = (_domainObjectType_1 != null);
       if (_tripleNotEquals_1) {
-        lemmaParam.setComplexType(this.mapComplexTypes(param.getParameterType()));
+        lemmaParam.setComplexType(this.mapComplexTypes(param.getParameterType(), ctx));
       } else {
         lemmaParam.setPrimitiveType(this.mapPrimitiveType(param.getParameterType().getType()));
       }
@@ -361,7 +357,7 @@ public class LemmaDomainDataModelFactory {
    * 
    * @param domainService true: map to LEMMA DML Domain Service. False: Map to LEMMA DML Application Service
    */
-  private ComplexType mapServiceToComplexType(final Service cmlDomainService, final boolean domainService) {
+  private ComplexType mapServiceToComplexType(final Service cmlDomainService, final boolean domainService, final Context ctx) {
     final DataStructure lemmaDomainService = LemmaDomainDataModelFactory.DATA_FACTORY.createDataStructure();
     lemmaDomainService.setName(cmlDomainService.getName());
     if (domainService) {
@@ -370,7 +366,7 @@ public class LemmaDomainDataModelFactory {
       lemmaDomainService.getFeatures().add(ComplexTypeFeature.APPLICATION_SERVICE);
     }
     final Consumer<ServiceOperation> _function = (ServiceOperation cmlOp) -> {
-      final DataOperation lemmaOp = this.mapDomainObjectOperationToDataOperation(cmlOp);
+      final DataOperation lemmaOp = this.mapDomainObjectOperationToDataOperation(cmlOp, ctx);
       lemmaDomainService.getOperations().add(lemmaOp);
     };
     cmlDomainService.getOperations().forEach(_function);
@@ -472,8 +468,8 @@ public class LemmaDomainDataModelFactory {
    * If the {@link Reference} has a list type of {@link CollectionType} a LEMMA DML {@link ListType} will be mapped (and
    * created if not existed yet)
    */
-  private ComplexType mapReferenceTypeToComplexType(final Reference ref, final DataField field) {
-    ComplexType complexType = this.findComplexTypeBySimpleDomainObject(ref.getDomainObjectType());
+  private ComplexType mapReferenceTypeToComplexType(final Reference ref, final DataField field, final Context ctx) {
+    ComplexType complexType = this.findComplexTypeBySimpleDomainObject(ref.getDomainObjectType(), ctx);
     boolean _equals = ref.getCollectionType().equals(CollectionType.LIST);
     if (_equals) {
       final ListType list = this.createListTypeIfNotExisting(complexType);
@@ -610,14 +606,14 @@ public class LemmaDomainDataModelFactory {
    * If the CML {@link org.contextmapper.tactic.dsl.tacticdsl.ComplexType} is a list then a
    * LEMMA {@link ListType} will be returned (and created if not existing)
    */
-  private ComplexType mapComplexTypes(final org.contextmapper.tactic.dsl.tacticdsl.ComplexType cmlComplexType) {
+  private ComplexType mapComplexTypes(final org.contextmapper.tactic.dsl.tacticdsl.ComplexType cmlComplexType, final Context ctx) {
     boolean _equals = cmlComplexType.getCollectionType().equals(CollectionType.LIST);
     if (_equals) {
       ListType list = null;
       SimpleDomainObject _domainObjectType = cmlComplexType.getDomainObjectType();
       boolean _tripleNotEquals = (_domainObjectType != null);
       if (_tripleNotEquals) {
-        final ComplexType lemmaComplexType = this.findComplexTypeBySimpleDomainObject(cmlComplexType.getDomainObjectType());
+        final ComplexType lemmaComplexType = this.findComplexTypeBySimpleDomainObject(cmlComplexType.getDomainObjectType(), ctx);
         list = this.createListTypeIfNotExisting(lemmaComplexType);
       } else {
         final PrimitiveType lemmaPrimitiveType = this.mapPrimitiveType(cmlComplexType.getType());
@@ -626,7 +622,7 @@ public class LemmaDomainDataModelFactory {
       this.listsToGenerate.add(list);
       return list;
     } else {
-      final ComplexType lemmaComplexType_1 = this.findComplexTypeBySimpleDomainObject(cmlComplexType.getDomainObjectType());
+      final ComplexType lemmaComplexType_1 = this.findComplexTypeBySimpleDomainObject(cmlComplexType.getDomainObjectType(), ctx);
       EList<ComplexType> _complexTypes = this.dataModel.getComplexTypes();
       for (final ComplexType cType : _complexTypes) {
         boolean _equals_1 = cType.getName().equals(lemmaComplexType_1.getName());
@@ -634,7 +630,7 @@ public class LemmaDomainDataModelFactory {
           return lemmaComplexType_1;
         }
       }
-      return this.mapSimpleDomainObject2ComplexType(cmlComplexType.getDomainObjectType());
+      return this.mapSimpleDomainObject2ComplexType(cmlComplexType.getDomainObjectType(), ctx);
     }
   }
   
@@ -643,7 +639,7 @@ public class LemmaDomainDataModelFactory {
    * by returning the needed {@link ComplexType} from the LEMMA {@link DataModel}.
    * If its not existing, it will be created on the fly.
    */
-  private ComplexType findComplexTypeBySimpleDomainObject(final SimpleDomainObject sObj) {
+  private ComplexType findComplexTypeBySimpleDomainObject(final SimpleDomainObject sObj, final Context ctx) {
     EList<ComplexType> _complexTypes = this.dataModel.getComplexTypes();
     for (final ComplexType lemmaComplexType : _complexTypes) {
       boolean _equals = sObj.getName().equals(lemmaComplexType.getName());
@@ -651,16 +647,16 @@ public class LemmaDomainDataModelFactory {
         return lemmaComplexType;
       }
     }
-    return this.mapSimpleDomainObject2ComplexType(sObj);
+    return this.mapSimpleDomainObject2ComplexType(sObj, ctx);
   }
   
   /**
-   * Checks whether a CML {@link DomainObject} was already mapped.
+   * Checks whether a CML {@link DomainObject} is already mapped in a {@link Context}.
    * Needed since a ComplexType is being created on the fly when not existing in the
    * {@link LemmaDomainDataModelFactory#mapReferenceType} method.
    */
-  private ComplexType alreadyMapped(final DomainObject obj) {
-    EList<ComplexType> _complexTypes = this.currentCtx.getComplexTypes();
+  private ComplexType alreadyMapped(final DomainObject obj, final Context ctx) {
+    EList<ComplexType> _complexTypes = ctx.getComplexTypes();
     for (final ComplexType cType : _complexTypes) {
       boolean _equals = cType.getName().equals(obj.getName());
       if (_equals) {
@@ -702,14 +698,19 @@ public class LemmaDomainDataModelFactory {
     return null;
   }
   
-  private ComplexType mapDomainObject2ConcreteComplexType(final SimpleDomainObject obj) {
+  private ComplexType mapDomainObject2ConcreteComplexType(final SimpleDomainObject obj, final Context ctx) {
     if (obj instanceof DomainObject) {
-      return _mapDomainObject2ConcreteComplexType((DomainObject)obj);
+      return _mapDomainObject2ConcreteComplexType((DomainObject)obj, ctx);
     } else if (obj instanceof org.contextmapper.tactic.dsl.tacticdsl.Enum) {
-      return _mapDomainObject2ConcreteComplexType((org.contextmapper.tactic.dsl.tacticdsl.Enum)obj);
+      return _mapDomainObject2ConcreteComplexType((org.contextmapper.tactic.dsl.tacticdsl.Enum)obj, ctx);
     } else {
       throw new IllegalArgumentException("Unhandled parameter types: " +
-        Arrays.<Object>asList(obj).toString());
+        Arrays.<Object>asList(obj, ctx).toString());
     }
+  }
+  
+  @Pure
+  public List<ListType> getListsToGenerate() {
+    return this.listsToGenerate;
   }
 }
