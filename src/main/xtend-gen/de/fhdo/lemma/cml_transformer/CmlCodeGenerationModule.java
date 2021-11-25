@@ -45,11 +45,7 @@ public class CmlCodeGenerationModule extends AbstractCodeGenerationModule {
   }
   
   /**
-   * This method performs the actual code generation. Note that LEMMA's model
-   * processing does not assume a specific type of code generation. For instance,
-   * this simple implementation uses simple Java {@link String}s to store the
-   * generated code. However, you may use any mechanism to facilitate code
-   * generation, e.g., template engines. The only requirement posed by LEMMA's
+   * This method performs the actual code generation. The only requirement posed by LEMMA's
    * model processing framework is that the{@link AbstractCodeGenerationModule#execute(String[], String[])}implementation of a code generation module returns a map with entries as
    * follows: - Key: Path of a generated file. By default, the file must reside in
    * the folder passed to the model processor in the "--target_model" commandline
@@ -58,51 +54,74 @@ public class CmlCodeGenerationModule extends AbstractCodeGenerationModule {
    * identifies the content's {@link Charset}. From the map
    * entries, LEMMA's code generation framework will write the generated files to
    * the filesystem of the model processor user.
-   * The method generates a file called "results.txt" in the given target folder
-   * (cf. the "run.sh" script). It will contain: - Per modeled microservice the
-   * count of modeled interfaces - Per modeled microservice the count of
-   * interfaces, which are "fully synchronous" (i.e., that contain only operations
-   * with synchronous parameters) - Per modeled microservice the count of
-   * interfaces, which are "fully asynchronous" (i.e., that contain only
-   * operations with asynchronous parameters) You can find the specifications for
-   * intermediate domain and service models here: - Intermediate Domain Model
-   * Specification:
-   * https://github.com/SeelabFhdo/lemma/tree/main/de.fhdo.lemma.data.intermediate.metamodel/doc/build/html
-   * - Intermediate Service Model Specification:
-   * https://github.com/SeelabFhdo/lemma/tree/main/de.fhdo.lemma.service.intermediate.metamodel/doc/build/html
    */
   @NotNull
   @Override
   public Map<String, Pair<String, Charset>> execute(@NotNull final String[] phaseArguments, @NotNull final String[] moduleArguments) {
-    final StringBuilder resultFileContents = new StringBuilder();
+    final Map<String, String> resultMap = new HashMap<String, String>();
     EObject _get = this.getResource().getContents().get(0);
     final ContextMappingModel cmlModel = ((ContextMappingModel) _get);
     final LemmaDomainDataModelFactory factory = new LemmaDomainDataModelFactory(cmlModel);
     final DataModel lemmaDataModel = factory.generateDataModel();
     final DataDslExtractor dataExtractor = new DataDslExtractor();
     System.out.println(dataExtractor.extractToString(lemmaDataModel));
-    final LinkedList<Technology> technologies = CollectionLiterals.<Technology>newLinkedList();
     EList<Context> _contexts = lemmaDataModel.getContexts();
-    for (final Context context : _contexts) {
+    for (final Context ctx : _contexts) {
       {
-        final LemmaServiceModelFactory serviceModelFactory = new LemmaServiceModelFactory(cmlModel, context, technologies);
+        StringConcatenation _builder = new StringConcatenation();
+        String _targetFolder = this.getTargetFolder();
+        _builder.append(_targetFolder);
+        _builder.append(File.separator);
+        _builder.append("domain");
+        _builder.append(File.separator);
+        String _name = ctx.getName();
+        _builder.append(_name);
+        _builder.append(".data");
+        final String ctxPath = _builder.toString();
+        final String ctxCode = dataExtractor.extractToString(ctx);
+        resultMap.put(ctxPath, ctxCode);
+      }
+    }
+    final LinkedList<Technology> technologies = CollectionLiterals.<Technology>newLinkedList();
+    EList<Context> _contexts_1 = lemmaDataModel.getContexts();
+    for (final Context ctx_1 : _contexts_1) {
+      {
+        final LemmaServiceModelFactory serviceModelFactory = new LemmaServiceModelFactory(cmlModel, ctx_1, technologies);
         final ServiceModel serviceModel = serviceModelFactory.buildServiceModel();
         final ServiceDslExtractor serviceExtractor = new ServiceDslExtractor();
-        System.out.println(serviceExtractor.extractToString(serviceModel));
+        StringConcatenation _builder = new StringConcatenation();
+        String _targetFolder = this.getTargetFolder();
+        _builder.append(_targetFolder);
+        _builder.append(File.separator);
+        _builder.append("microservices");
+        _builder.append(File.separator);
+        String _name = ctx_1.getName();
+        _builder.append(_name);
+        _builder.append(".services");
+        final String servicePath = _builder.toString();
+        final String serviceCode = serviceExtractor.extractToString(serviceModel);
+        resultMap.put(servicePath, serviceCode);
+        System.out.println(serviceCode);
       }
     }
     final TechnologyDslExtractor technologyExtractor = new TechnologyDslExtractor();
     for (final Technology technology : technologies) {
-      System.out.println(technologyExtractor.extractToString(technology));
+      {
+        StringConcatenation _builder = new StringConcatenation();
+        String _targetFolder = this.getTargetFolder();
+        _builder.append(_targetFolder);
+        _builder.append(File.separator);
+        _builder.append("technology");
+        _builder.append(File.separator);
+        String _name = technology.getName();
+        _builder.append(_name);
+        _builder.append(".technology");
+        final String technologyPath = _builder.toString();
+        final String technologyCode = technologyExtractor.extractToString(technology).toString();
+        resultMap.put(technologyPath, technologyCode);
+        System.out.println(technologyCode);
+      }
     }
-    StringConcatenation _builder = new StringConcatenation();
-    String _targetFolder = this.getTargetFolder();
-    _builder.append(_targetFolder);
-    _builder.append(File.separator);
-    _builder.append("results.txt");
-    final String resultFilePath = _builder.toString();
-    final Map<String, String> resultMap = new HashMap<String, String>();
-    resultMap.put(resultFilePath, resultFileContents.toString());
     return this.withCharset(resultMap, StandardCharsets.UTF_8.name());
   }
 }

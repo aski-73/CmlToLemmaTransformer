@@ -33,11 +33,7 @@ import de.fhdo.lemma.cml_transformer.code_generators.TechnologyDslExtractor
 	}
 
 	/** 
-	 * This method performs the actual code generation. Note that LEMMA's model
-	 * processing does not assume a specific type of code generation. For instance,
-	 * this simple implementation uses simple Java {@link String}s to store the
-	 * generated code. However, you may use any mechanism to facilitate code
-	 * generation, e.g., template engines. The only requirement posed by LEMMA's
+	 * This method performs the actual code generation. The only requirement posed by LEMMA's
 	 * model processing framework is that the{@link AbstractCodeGenerationModule#execute(String[], String[])}implementation of a code generation module returns a map with entries as
 	 * follows: - Key: Path of a generated file. By default, the file must reside in
 	 * the folder passed to the model processor in the "--target_model" commandline
@@ -46,22 +42,11 @@ import de.fhdo.lemma.cml_transformer.code_generators.TechnologyDslExtractor
 	 * identifies the content's {@link Charset}. From the map
 	 * entries, LEMMA's code generation framework will write the generated files to
 	 * the filesystem of the model processor user.
-	 * The method generates a file called "results.txt" in the given target folder
-	 * (cf. the "run.sh" script). It will contain: - Per modeled microservice the
-	 * count of modeled interfaces - Per modeled microservice the count of
-	 * interfaces, which are "fully synchronous" (i.e., that contain only operations
-	 * with synchronous parameters) - Per modeled microservice the count of
-	 * interfaces, which are "fully asynchronous" (i.e., that contain only
-	 * operations with asynchronous parameters) You can find the specifications for
-	 * intermediate domain and service models here: - Intermediate Domain Model
-	 * Specification:
-	 * https://github.com/SeelabFhdo/lemma/tree/main/de.fhdo.lemma.data.intermediate.metamodel/doc/build/html
-	 * - Intermediate Service Model Specification:
-	 * https://github.com/SeelabFhdo/lemma/tree/main/de.fhdo.lemma.service.intermediate.metamodel/doc/build/html
 	 */
 	@NotNull override Map<String, Pair<String, Charset>> execute(@NotNull String[] phaseArguments,
 		@NotNull String[] moduleArguments) {
-		val StringBuilder resultFileContents = new StringBuilder()
+		val Map<String, String> resultMap = new HashMap()
+		
 		/*
 		 * Retrieve the passed cml source model to work with (the above implementation
 		 * of {@link getLanguageNamespace} tells the framework that this module shall
@@ -75,6 +60,11 @@ import de.fhdo.lemma.cml_transformer.code_generators.TechnologyDslExtractor
 		// System.out.println(DomainDataModelCodeGenerator.printDataModel(lemmaDataModel))
 		val dataExtractor = new DataDslExtractor()
 		System.out.println(dataExtractor.extractToString(lemmaDataModel))
+		for (ctx: lemmaDataModel.contexts) {
+			val ctxPath = '''«getTargetFolder()»«File::separator»domain«File::separator»«ctx.name».data'''.toString
+			val ctxCode = dataExtractor.extractToString(ctx)
+			resultMap.put(ctxPath, ctxCode)
+		}
 		
 		/* 
 		 * Technologies are created with the {@link LemmaTechnologyFactory} which is used
@@ -84,24 +74,26 @@ import de.fhdo.lemma.cml_transformer.code_generators.TechnologyDslExtractor
 		 val technologies = <Technology> newLinkedList
 		
 		/* For every context of the dataModel instantiate a Lemma SML by using a factory */
-		for (context: lemmaDataModel.contexts) {
-			val serviceModelFactory = new LemmaServiceModelFactory(cmlModel, context, technologies)
+		for (ctx: lemmaDataModel.contexts) {
+			val serviceModelFactory = new LemmaServiceModelFactory(cmlModel, ctx, technologies)
 			val serviceModel = serviceModelFactory.buildServiceModel()
 			val serviceExtractor = new ServiceDslExtractor()
-			System.out.println(serviceExtractor.extractToString(serviceModel))
+			
+			val servicePath = '''«getTargetFolder()»«File::separator»microservices«File::separator»«ctx.name».services'''.toString
+			val serviceCode = serviceExtractor.extractToString(serviceModel)
+			resultMap.put(servicePath, serviceCode)
+			System.out.println(serviceCode)
 		}
 		
 		/* Every created Technology Model will be put in a separate file */
 		val technologyExtractor = new TechnologyDslExtractor()
 		for (technology: technologies) {
-			System.out.println(technologyExtractor.extractToString(technology))
+			val technologyPath = '''«getTargetFolder()»«File::separator»technology«File::separator»«technology.name».technology'''.toString
+			val technologyCode = technologyExtractor.extractToString(technology).toString
+			resultMap.put(technologyPath, technologyCode)
+			System.out.println(technologyCode)
 		}
 		
-		
-		/* Prepare the path of the generated file */
-		val String resultFilePath = '''«getTargetFolder()»«File::separator»results.txt'''.toString
-		val Map<String, String> resultMap = new HashMap()
-		resultMap.put(resultFilePath, resultFileContents.toString())
 		return withCharset(resultMap, StandardCharsets::UTF_8.name())
 	}
 
