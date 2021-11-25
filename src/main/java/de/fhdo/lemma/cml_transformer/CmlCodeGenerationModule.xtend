@@ -16,7 +16,6 @@ import de.fhdo.lemma.cml_transformer.factory.LemmaServiceModelFactory
 import de.fhdo.lemma.cml_transformer.code_generators.ServiceDslExtractor
 import de.fhdo.lemma.cml_transformer.code_generators.DataDslExtractor
 import de.fhdo.lemma.technology.Technology
-import de.fhdo.lemma.technology.services.TechnologyDslGrammarAccess.TechnologyElements
 import de.fhdo.lemma.cml_transformer.code_generators.TechnologyDslExtractor
 
 /** 

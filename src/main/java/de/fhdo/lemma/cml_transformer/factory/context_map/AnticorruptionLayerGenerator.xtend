@@ -26,20 +26,20 @@ class AnticorruptionLayerGenerator {
 	/**
 	 * Mapped LEMMA {@link DataModel} which contains all {@link Context}s
 	 */
-	private DataModel dataModel
+	DataModel dataModel
 
 	/**
 	 * Mapped LEMMA DML {@link Context} which receives an Translator
 	 */
-	private Context context
+	Context context
 
 	/**
 	 * Context Map of the CML Model which contains  ACL-relations of the LEMMA DML {@value context}. The {@link Context} must have the same name
 	 * as the {@link BoundedContext} in the Context Map in order to map them.
 	 */
-	private ContextMap map
+	ContextMap map
 
-	private List<String> errors
+	List<String> errors
 
 	new(Context context, DataModel dataModel, ContextMap map, List<String> errors) {
 		this.dataModel = dataModel

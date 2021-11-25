@@ -1,16 +1,15 @@
 package de.fhdo.lemma.cml_transformer.factory.context_map
 
+import de.fhdo.lemma.data.ComplexTypeFeature
 import de.fhdo.lemma.data.Context
+import de.fhdo.lemma.data.DataFactory
+import de.fhdo.lemma.data.DataModel
+import de.fhdo.lemma.data.DataStructure
+import java.util.stream.Collectors
+import org.contextmapper.dsl.contextMappingDSL.BoundedContext
 import org.contextmapper.dsl.contextMappingDSL.ContextMap
 import org.contextmapper.dsl.contextMappingDSL.UpstreamDownstreamRelationship
 import org.contextmapper.dsl.contextMappingDSL.UpstreamRole
-import java.util.stream.Collectors
-import de.fhdo.lemma.data.DataModel
-import de.fhdo.lemma.data.DataStructure
-import de.fhdo.lemma.data.DataFactory
-import de.fhdo.lemma.data.ComplexTypeFeature
-import de.fhdo.lemma.cml_transformer.factory.LemmaDomainDataModelFactory
-import de.fhdo.lemma.data.DataOperation
 import org.eclipse.emf.ecore.util.EcoreUtil
 
 /**
@@ -25,18 +24,18 @@ class OpenHostServiceDownstreamGenerator {
 	/**
 	 * Mapped LEMMA DML {@link Context} which receives an Accessor
 	 */
-	private Context context
+	Context context
 
 	/**
 	 * The whole LEMMA DML Model in order to find the upstream part of the OHS relation.
 	 */
-	private DataModel dataModel
+	DataModel dataModel
 
 	/**
 	 * Context Map of the CML Model which contains  OHS-relations of the LEMMA DML {@link Context}. The {@link Context} must have the same name
 	 * as the {@link BoundedContext} in the Context Map in order to map them.
 	 */
-	private ContextMap map
+	ContextMap map
 
 	new(Context context, DataModel dataModel, ContextMap map) {
 		this.context = context

@@ -1,9 +1,9 @@
 package de.fhdo.lemma.cml_transformer.factory.context_map
 
+import de.fhdo.lemma.cml_transformer.Util
 import de.fhdo.lemma.cml_transformer.factory.LemmaTechnologyModelFactory
 import de.fhdo.lemma.data.ComplexType
 import de.fhdo.lemma.data.Context
-import de.fhdo.lemma.data.DataFactory
 import de.fhdo.lemma.data.DataModel
 import de.fhdo.lemma.data.DataOperation
 import de.fhdo.lemma.data.DataStructure
@@ -12,19 +12,18 @@ import de.fhdo.lemma.service.ImportType
 import de.fhdo.lemma.service.Interface
 import de.fhdo.lemma.service.Microservice
 import de.fhdo.lemma.service.ServiceFactory
+import de.fhdo.lemma.service.ServiceModel
 import de.fhdo.lemma.technology.CommunicationType
 import de.fhdo.lemma.technology.ExchangePattern
 import de.fhdo.lemma.technology.ServiceAspect
 import de.fhdo.lemma.technology.Technology
+import java.util.List
 import java.util.stream.Collectors
 import org.contextmapper.dsl.contextMappingDSL.BoundedContext
 import org.contextmapper.dsl.contextMappingDSL.ContextMap
 import org.contextmapper.dsl.contextMappingDSL.UpstreamDownstreamRelationship
 import org.contextmapper.dsl.contextMappingDSL.UpstreamRole
-import java.util.List
-import de.fhdo.lemma.service.ServiceModel
 import org.eclipse.emf.ecore.util.EcoreUtil
-import de.fhdo.lemma.cml_transformer.Util
 
 /**
  * Upstream implementation of an OHS
@@ -34,43 +33,40 @@ import de.fhdo.lemma.cml_transformer.Util
  * If such an {@link ApplicationService} is not defined nothing will be done.
  */
 class OpenHostServiceUpstreamGenerator {
-	static val SERVICE_MODEL_IMPORT_ALIAS = "Services"
-
 	static val SERVICE_FACTORY = ServiceFactory.eINSTANCE
-	static val DATA_FACTORY = DataFactory.eINSTANCE
-
+	
 	/**
 	 * Mapped LEMMA DML {@link Context} for which a Microservice will be generated
 	 */
-	private Context context
+	Context context
 	
 	/**
 	 * List of LEMMA {@link Technology}-Model. Newly created technologies that are identified
 	 * by the implementationTechnology key word will be put in here
 	 */
-	private List<Technology> technologies
+	List<Technology> technologies
 
 	/**
 	 * The service model that contains the microservice. Needed in order to add the imports
 	 */
-	private ServiceModel serviceModel
+	ServiceModel serviceModel
 
 	/**
 	 * LEMMA {@link Microservice} that will get a new {@link ServiceInterface}. Either Api or Accessor. Depends on if its a upstream/downstream context.
 	 */
-	private Microservice service
+	Microservice service
 
 	/**
 	 * Context Map of the CML Model which contains  OHS-relations of the LEMMA DML {@link Context}. The {@link Context} must have the same name
 	 * as the {@link BoundedContext} in the Context Map in order to map them.
 	 */
-	private ContextMap map
+	ContextMap map
 
-	private String domainDataModelPath
+	String domainDataModelPath
 
-	private String technologyModelPath
+	String technologyModelPath
 
-	private val techFactory = new LemmaTechnologyModelFactory()
+	val techFactory = new LemmaTechnologyModelFactory()
 
 	new(
 		Context context,

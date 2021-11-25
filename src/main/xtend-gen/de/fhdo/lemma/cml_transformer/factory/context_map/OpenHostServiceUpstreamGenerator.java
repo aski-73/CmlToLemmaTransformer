@@ -4,7 +4,6 @@ import de.fhdo.lemma.cml_transformer.Util;
 import de.fhdo.lemma.cml_transformer.factory.LemmaTechnologyModelFactory;
 import de.fhdo.lemma.data.ComplexType;
 import de.fhdo.lemma.data.Context;
-import de.fhdo.lemma.data.DataFactory;
 import de.fhdo.lemma.data.DataModel;
 import de.fhdo.lemma.data.DataOperation;
 import de.fhdo.lemma.data.DataOperationParameter;
@@ -52,11 +51,7 @@ import org.eclipse.xtext.xbase.lib.Pair;
  */
 @SuppressWarnings("all")
 public class OpenHostServiceUpstreamGenerator {
-  private static final String SERVICE_MODEL_IMPORT_ALIAS = "Services";
-  
   private static final ServiceFactory SERVICE_FACTORY = ServiceFactory.eINSTANCE;
-  
-  private static final DataFactory DATA_FACTORY = DataFactory.eINSTANCE;
   
   /**
    * Mapped LEMMA DML {@link Context} for which a Microservice will be generated

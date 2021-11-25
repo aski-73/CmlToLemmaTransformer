@@ -17,14 +17,14 @@ class ConformistGenerator {
 	 * CML Model that contains a context Map of the CML Model. Itcontains  ACL-relations of the LEMMA DML {@value context}. 
 	 * The {@link Context} must have the same name as the {@link BoundedContext} in the Context Map in order to map them.
 	 */
-	private ContextMappingModel cmlModel
+	ContextMappingModel cmlModel
 
 	/**
 	 * Mapped LEMMA DML {@link Context} which receives an Translator
 	 */
-	private Context context
+	Context context
 
-	private LemmaDomainDataModelFactory dmlFactory
+	LemmaDomainDataModelFactory dmlFactory
 
 	new(Context context, ContextMappingModel cmlModel, LemmaDomainDataModelFactory dmlFactory) {
 		this.context = context

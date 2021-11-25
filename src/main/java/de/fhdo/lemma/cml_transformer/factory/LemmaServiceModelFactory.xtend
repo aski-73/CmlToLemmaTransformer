@@ -53,23 +53,23 @@ class LemmaServiceModelFactory {
 	/**
 	 * Input Model (CML)
 	 */
-	private ContextMappingModel cmlModel
+	ContextMappingModel cmlModel
 
 	/**
 	 * Input Model
 	 */
-	private Context context
+	Context context
 
 	/** 
 	 * Output Model (SML)
 	 */
-	private ServiceModel serviceModel
+	ServiceModel serviceModel
 		
 		
 	/**
 	 * Created {@link Technology}s will be put in here
 	 */
-	private List<Technology> technologies
+	List<Technology> technologies
 
 	new(ContextMappingModel cmlModel, Context context, List<Technology> technologies) {
 		this.cmlModel = cmlModel
