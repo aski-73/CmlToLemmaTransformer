@@ -1,0 +1,148 @@
+ContextMap SmallInsuranceContextMap {
+    contains CustomerManagementContext
+    contains PrintingContext
+    contains PolicyManagementContext
+
+    CustomerManagementContext [ACL]<-[OHS] PrintingContext {
+        implementationTechnology = "RESTfulHttp"
+        exposedAggregates = PrintingJob
+    }
+
+    PolicyManagementContext [CF]<-[OHS] CustomerManagementContext {
+        implementationTechnology = "RESTfulHttp"
+        exposedAggregates = Customer
+    }
+}
+
+/* Bounded Context Definitions */
+// OHS
+BoundedContext PrintingContext {
+    Application {
+        Service PrintingJobApi {
+            int createPrintingJob(@PrintingJobDto printingJob);
+            void deletePrintingJob(int id);
+        }
+    }
+    Aggregate PrintingJob {
+        Service PrintingService {
+            @PrintingJob createPrintingJob(String issuer, @Document doc);
+            void deletePrintingJob(int id);
+        }
+        Entity PrintingJob {
+            aggregateRoot
+            int id key
+            - Document document
+            String issuer
+            def void printIssuer(String someString);
+            def int printInt();
+            def Document printDoc(@Document doc);
+        }
+        ValueObject Document {
+            String documentName
+            String content
+        }
+    }
+    Aggregate PrintingJobDto {
+        ValueObject PrintingJobDto {
+            aggregateRoot
+            - DocumentDto document
+            String issuer
+        }
+        ValueObject DocumentDto {
+            String documentName
+            String content
+        }
+    }
+}
+
+// OHS & ACL
+BoundedContext CustomerManagementContext {
+    // Feature, da konkret User Requirements umgesetzt werden (Benutzer verwalten,
+    // Druckaufträge für einen Benutzer starten)
+    type = FEATURE
+
+    // Application Services
+    Application {
+        Service PrintingJobAccessor {
+            int createPrintingJob(@PrintingJobDto p);
+            void deletePrintingJob(int id);
+        }
+
+        Service CustomerApi {
+            int createCustomer(@CustomerDto customer);
+            void deleteCustomer(int id);
+        }
+    }
+    // Domänenobjekte
+    Aggregate Customer {
+        // Domain Service
+        Service CustomerService {
+            @Customer createCustomer(String firstname, String lastname, List<@Address> addresses);
+            void deleteCustomer(int id);
+        }
+        Entity Customer {
+            aggregateRoot
+            int id key
+            String firstname
+            String lastname
+            - List<Address> addresses
+        }
+        ValueObject Address {
+            String street
+            String city
+        }
+    }
+    Aggregate CustomerData {
+        Entity CustomerData {
+            aggregateRoot
+            hint = "ACL:PrintingJob"
+            String printOut
+        }
+    }
+    Aggregate CustomerDto {
+        ValueObject CustomerDto {
+            String firstname
+            String lastname
+            List<String> addresses
+        }
+    }
+}
+
+// Conformist
+BoundedContext PolicyManagementContext {
+    // Feature, da konkret User Requirements umgesetzt werden
+    type = FEATURE
+    Aggregate Contract {
+        Service ContractService {
+            // Als Conformist kennt PolicyManagement "Customer"
+            // In LEMMA erhält dieser eine Kopie von Customer
+            void createContract(List<int> productIds, int customerId);
+        }
+        Entity Contract {
+            aggregateRoot
+            int id key
+            - List<Product> products
+            - Customer client
+        }
+        Entity Product {
+            int id key
+            String productName
+            BigDecimal price
+        }
+    }
+}
+
+UserStory US1_Printing {
+    As an "Customer"
+        I want to "print" a "Document"
+    so that "I am able to archive my Documents"
+}
+
+UserStory US2_Insurance {
+    As an "Insurance Employee"
+    I want to "create" a "Customer" with its "firstname", "lastname", "Address"
+    I want to "update" an "Address" for a "Customer"
+    I want to "offer" a "Contract" for a "Customer"
+    so that "I am able to manage the customers data and offer them insurance contracts."
+}
+

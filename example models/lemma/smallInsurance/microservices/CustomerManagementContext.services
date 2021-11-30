@@ -1,4 +1,4 @@
-import datatypes from "CustomerManagementContext.data" as domain
+import datatypes from "../domain/CustomerManagementContext.data" as domain
 import technology from "../technology/rest.technology" as Rest
 /**
  * Anti Corruption Layer (Downstream) & OHS (Upstream)
@@ -7,10 +7,7 @@ import technology from "../technology/rest.technology" as Rest
 @sync(Rest::_protocols.rest)
 public functional microservice de.fhdoMaster.fe.smallInsureance.CustomerManagementContextService {
 	/** 
-	 * Pro exposed Aggregate und Application Service ein Interface
-	 * Für jede exposed Aggregate werden CRUD Operationen erstellt
-	 * postXYZ (Create),  getXYZ(read), getXYZs(read), updateXYZ(Update), deleteXYZ (Delete)
-	 * Ausnahme: Diese Methoden wurden bereits in einem Application Service generiert
+	 * Pro exposed Aggregate und Application Service ein Interface.
 	 * Bezeichnung: exposed Aggregate Name + "Api"
 	 */
 	interface CustomerApi {

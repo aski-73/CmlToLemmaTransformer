@@ -1,4 +1,4 @@
-import datatypes from "PrintingContext.data" as domain
+import datatypes from "../domain/PrintingContext.data" as domain
 import technology from "../technology/rest.technology" as Rest
 
 /**

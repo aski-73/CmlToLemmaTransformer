@@ -2,7 +2,7 @@ plugins {
     java
 }
 
-group = "de.fhdo.lemma.examples.model_processing.latest"
+group = "de.fhdo.lemma.cml_transformer"
 
 repositories {
     mavenCentral()
@@ -60,7 +60,7 @@ val standalone = task("standalone", type = Jar::class) {
     with(tasks["jar"] as CopySpec)
 
     manifest {
-        attributes("Main-Class" to "de.fhdo.lemma.examples.model_processing.latest.ExampleModelProcessor")
+        attributes("Main-Class" to "de.fhdo.lemma.cml_transformer.CmlModelProcessor")
 
         // Prevent security exception from JAR verifier
         exclude("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF")

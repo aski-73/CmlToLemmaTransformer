@@ -1,2 +1,2 @@
-rootProject.name = "de.fhdo.lemma.examples.model_processing.latest"
+rootProject.name = "cml_transformer"
 
