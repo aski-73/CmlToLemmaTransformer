@@ -45,7 +45,6 @@ class LemmaServiceModelFactory {
 			case BoundedContextType.TEAM: Visibility.INTERNAL
 			case BoundedContextType.FEATURE: Visibility.PUBLIC
 			case BoundedContextType.SYSTEM: Visibility.ARCHITECTURE
-			
 			default: Visibility.PUBLIC
 		}
 	}
@@ -64,8 +63,7 @@ class LemmaServiceModelFactory {
 	 * Output Model (SML)
 	 */
 	ServiceModel serviceModel
-		
-		
+
 	/**
 	 * Created {@link Technology}s will be put in here
 	 */
@@ -77,7 +75,15 @@ class LemmaServiceModelFactory {
 		this.technologies = technologies
 	}
 
-	def ServiceModel buildServiceModel() {
+	/**
+	 * Instantiates a Service Model for a {@link BoundedContext}/{@link Context} provided
+	 * in the ctor.
+	 * 
+	 * @param dataModelPath 	  Path containing all created Data Models (.data files)
+	 * @param serviceModelPath	  Path containing all created Service Models (.services files)
+	 * @param technologyModelPath Path containing all created Technology Models (.technology files)
+	 */
+	def ServiceModel buildServiceModel(String dataModelPath, String serviceModelPath, String technologyModelPath) {
 		this.serviceModel = SERVICE_FACTORY.createServiceModel
 
 		val boundedContext = this.cmlModel.boundedContexts.stream.filter [ bc |
@@ -93,8 +99,8 @@ class LemmaServiceModelFactory {
 			microservice.type = mapBoundedContextTypeToServiceType(boundedContext.get.type)
 
 			// use OHS Upstream Generator to fill the microservice
-			val ohsUpstreamGenerator = new OpenHostServiceUpstreamGenerator(this.context, this.serviceModel, microservice,
-				cmlModel.map, "../domain", "../service", this.technologies)
+			val ohsUpstreamGenerator = new OpenHostServiceUpstreamGenerator(this.context, this.serviceModel,
+				microservice, cmlModel.map, dataModelPath, technologyModelPath, this.technologies)
 			ohsUpstreamGenerator.mapOhsUpstream()
 
 			this.serviceModel.microservices.add(microservice)

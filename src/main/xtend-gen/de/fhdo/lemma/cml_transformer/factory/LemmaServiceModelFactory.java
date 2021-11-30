@@ -114,7 +114,15 @@ public class LemmaServiceModelFactory {
     this.technologies = technologies;
   }
   
-  public ServiceModel buildServiceModel() {
+  /**
+   * Instantiates a Service Model for a {@link BoundedContext}/{@link Context} provided
+   * in the ctor.
+   * 
+   * @param dataModelPath 	  Path containing all created Data Models (.data files)
+   * @param serviceModelPath	  Path containing all created Service Models (.services files)
+   * @param technologyModelPath Path containing all created Technology Models (.technology files)
+   */
+  public ServiceModel buildServiceModel(final String dataModelPath, final String serviceModelPath, final String technologyModelPath) {
     this.serviceModel = LemmaServiceModelFactory.SERVICE_FACTORY.createServiceModel();
     final Predicate<BoundedContext> _function = (BoundedContext bc) -> {
       return bc.getName().equals(this.context.getName());
@@ -130,7 +138,7 @@ public class LemmaServiceModelFactory {
       microservice.setVisibility(LemmaServiceModelFactory.mapBoundedContextTypeToServiceVisibility(boundedContext.get().getType()));
       microservice.setType(LemmaServiceModelFactory.mapBoundedContextTypeToServiceType(boundedContext.get().getType()));
       ContextMap _map = this.cmlModel.getMap();
-      final OpenHostServiceUpstreamGenerator ohsUpstreamGenerator = new OpenHostServiceUpstreamGenerator(this.context, this.serviceModel, microservice, _map, "../domain", "../service", this.technologies);
+      final OpenHostServiceUpstreamGenerator ohsUpstreamGenerator = new OpenHostServiceUpstreamGenerator(this.context, this.serviceModel, microservice, _map, dataModelPath, technologyModelPath, this.technologies);
       ohsUpstreamGenerator.mapOhsUpstream();
       this.serviceModel.getMicroservices().add(microservice);
     }

@@ -1,9 +1,6 @@
 package de.fhdo.lemma.cml_transformer.factory;
 
 import com.google.common.base.Objects;
-import de.fhdo.lemma.cml_transformer.factory.context_map.AnticorruptionLayerGenerator;
-import de.fhdo.lemma.cml_transformer.factory.context_map.ConformistGenerator;
-import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceDownstreamGenerator;
 import de.fhdo.lemma.data.ComplexType;
 import de.fhdo.lemma.data.ComplexTypeFeature;
 import de.fhdo.lemma.data.Context;
@@ -25,7 +22,6 @@ import java.util.function.Consumer;
 import org.contextmapper.dsl.contextMappingDSL.Aggregate;
 import org.contextmapper.dsl.contextMappingDSL.Application;
 import org.contextmapper.dsl.contextMappingDSL.BoundedContext;
-import org.contextmapper.dsl.contextMappingDSL.ContextMap;
 import org.contextmapper.dsl.contextMappingDSL.ContextMappingModel;
 import org.contextmapper.tactic.dsl.tacticdsl.Attribute;
 import org.contextmapper.tactic.dsl.tacticdsl.CollectionType;
@@ -40,6 +36,7 @@ import org.contextmapper.tactic.dsl.tacticdsl.ServiceOperation;
 import org.contextmapper.tactic.dsl.tacticdsl.SimpleDomainObject;
 import org.contextmapper.tactic.dsl.tacticdsl.ValueObject;
 import org.eclipse.emf.common.util.EList;
+import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.xtend.lib.annotations.AccessorType;
 import org.eclipse.xtend.lib.annotations.Accessors;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
@@ -108,42 +105,14 @@ public class LemmaDomainDataModelFactory {
   }
   
   /**
-   * Maps CML Model {@link ContextMappingModel} to LEMMA DML Model {@link DataModel}
+   * Maps CML Model {@link BoundedContext} to LEMMA DML Model {@link DataModel}. The latter containing one {@link Context}
    */
-  public DataModel generateDataModel() {
+  public DataModel generateDataModel(final BoundedContext bc) {
     this.listsToGenerate = CollectionLiterals.<ListType>newLinkedList();
     this.dataModel = LemmaDomainDataModelFactory.DATA_FACTORY.createDataModel();
-    final Consumer<BoundedContext> _function = (BoundedContext bc) -> {
-      final Context ctx = this.mapBoundedContext2Context(bc);
-      ctx.setDataModel(this.dataModel);
-      this.dataModel.getContexts().add(ctx);
-    };
-    this.cmlModel.getBoundedContexts().forEach(_function);
-    EList<Context> _contexts = this.dataModel.getContexts();
-    for (final Context ctx : _contexts) {
-      {
-        ContextMap _map = this.cmlModel.getMap();
-        final OpenHostServiceDownstreamGenerator ohsGenerator = new OpenHostServiceDownstreamGenerator(ctx, this.dataModel, _map);
-        ohsGenerator.mapOhsDownstream();
-      }
-    }
-    final LinkedList<String> errors = CollectionLiterals.<String>newLinkedList();
-    EList<Context> _contexts_1 = this.dataModel.getContexts();
-    for (final Context ctx_1 : _contexts_1) {
-      {
-        ContextMap _map = this.cmlModel.getMap();
-        final AnticorruptionLayerGenerator aclGenerator = new AnticorruptionLayerGenerator(ctx_1, this.dataModel, _map, errors);
-        aclGenerator.mapAcl();
-      }
-    }
-    EList<Context> _contexts_2 = this.dataModel.getContexts();
-    for (final Context ctx_2 : _contexts_2) {
-      {
-        LemmaDomainDataModelFactory _lemmaDomainDataModelFactory = new LemmaDomainDataModelFactory(this.cmlModel);
-        final ConformistGenerator cofGenerator = new ConformistGenerator(ctx_2, this.cmlModel, _lemmaDomainDataModelFactory);
-        cofGenerator.mapCof();
-      }
-    }
+    final Context ctx = this.mapBoundedContext2Context(bc);
+    ctx.setDataModel(this.dataModel);
+    this.dataModel.getContexts().add(ctx);
     return this.dataModel;
   }
   
@@ -225,7 +194,7 @@ public class LemmaDomainDataModelFactory {
   private ComplexType _mapDomainObject2ConcreteComplexType(final DomainObject obj, final Context ctx) {
     final ComplexType alreadyMappedType = this.alreadyMapped(obj, ctx);
     if ((alreadyMappedType != null)) {
-      return alreadyMappedType;
+      return EcoreUtil.<ComplexType>copy(alreadyMappedType);
     }
     final DataStructure lemmaStructure = this.createDataStructure(obj.getName());
     boolean _isAggregateRoot = obj.isAggregateRoot();
@@ -640,7 +609,7 @@ public class LemmaDomainDataModelFactory {
    * If its not existing, it will be created on the fly.
    */
   private ComplexType findComplexTypeBySimpleDomainObject(final SimpleDomainObject sObj, final Context ctx) {
-    EList<ComplexType> _complexTypes = this.dataModel.getComplexTypes();
+    EList<ComplexType> _complexTypes = ctx.getComplexTypes();
     for (final ComplexType lemmaComplexType : _complexTypes) {
       boolean _equals = sObj.getName().equals(lemmaComplexType.getName());
       if (_equals) {

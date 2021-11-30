@@ -12,8 +12,10 @@ import de.fhdo.lemma.data.PrimitiveType;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.contextmapper.dsl.contextMappingDSL.Aggregate;
 import org.contextmapper.dsl.contextMappingDSL.BoundedContext;
 import org.contextmapper.dsl.contextMappingDSL.ContextMap;
@@ -41,9 +43,9 @@ public class OpenHostServiceDownstreamGenerator {
   private Context context;
   
   /**
-   * The whole LEMMA DML Model in order to find the upstream part of the OHS relation.
+   * All instantiated LEMMA DataModels so far in order to find the upstream part of the OHS relation.
    */
-  private DataModel dataModel;
+  private List<DataModel> dataModels;
   
   /**
    * Context Map of the CML Model which contains  OHS-relations of the LEMMA DML {@link Context}. The {@link Context} must have the same name
@@ -51,9 +53,9 @@ public class OpenHostServiceDownstreamGenerator {
    */
   private ContextMap map;
   
-  public OpenHostServiceDownstreamGenerator(final Context context, final DataModel dataModel, final ContextMap map) {
+  public OpenHostServiceDownstreamGenerator(final Context context, final List<DataModel> dataModels, final ContextMap map) {
     this.context = context;
-    this.dataModel = dataModel;
+    this.dataModels = dataModels;
     this.map = map;
   }
   
@@ -67,27 +69,31 @@ public class OpenHostServiceDownstreamGenerator {
     for (final Relationship rel : rr) {
       {
         final BoundedContext upstreamBoundedContext = ((UpstreamDownstreamRelationship) rel).getUpstream();
-        final Predicate<Context> _function = (Context context) -> {
+        final Function<DataModel, Stream<Context>> _function = (DataModel dataModel) -> {
+          return dataModel.getContexts().stream();
+        };
+        final Stream<Context> allContexts = this.dataModels.stream().<Context>flatMap(_function);
+        final Predicate<Context> _function_1 = (Context context) -> {
           return context.getName().equals(upstreamBoundedContext.getName());
         };
-        final Consumer<Context> _function_1 = (Context upstreamContext) -> {
+        final Consumer<Context> _function_2 = (Context upstreamContext) -> {
           EList<Aggregate> _upstreamExposedAggregates = ((UpstreamDownstreamRelationship) rel).getUpstreamExposedAggregates();
           for (final Aggregate exposedAggregate : _upstreamExposedAggregates) {
             {
-              final Predicate<ComplexType> _function_2 = (ComplexType cType) -> {
+              final Predicate<ComplexType> _function_3 = (ComplexType cType) -> {
                 String _name = cType.getName();
                 String _name_1 = exposedAggregate.getName();
                 String _plus = (_name_1 + "Api");
                 return _name.equals(_plus);
               };
-              final Optional<ComplexType> appService = upstreamContext.getComplexTypes().stream().filter(_function_2).findFirst();
-              final Predicate<ComplexType> _function_3 = (ComplexType cType) -> {
+              final Optional<ComplexType> appService = upstreamContext.getComplexTypes().stream().filter(_function_3).findFirst();
+              final Predicate<ComplexType> _function_4 = (ComplexType cType) -> {
                 String _name = cType.getName();
                 String _name_1 = exposedAggregate.getName();
                 String _plus = (_name_1 + "Accessor");
                 return _name.equals(_plus);
               };
-              final Optional<ComplexType> accessorService = this.context.getComplexTypes().stream().filter(_function_3).findFirst();
+              final Optional<ComplexType> accessorService = this.context.getComplexTypes().stream().filter(_function_4).findFirst();
               if ((appService.isPresent() && (!accessorService.isPresent()))) {
                 ComplexType _get = appService.get();
                 final DataStructure newAccessorService = this.mapApplicationServiceToAccessor(((DataStructure) _get));
@@ -96,7 +102,7 @@ public class OpenHostServiceDownstreamGenerator {
             }
           }
         };
-        this.dataModel.getContexts().stream().filter(_function).findFirst().ifPresent(_function_1);
+        allContexts.filter(_function_1).findFirst().ifPresent(_function_2);
       }
     }
   }

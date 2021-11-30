@@ -11,6 +11,7 @@ import org.contextmapper.dsl.contextMappingDSL.ContextMap
 import org.contextmapper.dsl.contextMappingDSL.UpstreamDownstreamRelationship
 import org.contextmapper.dsl.contextMappingDSL.UpstreamRole
 import org.eclipse.emf.ecore.util.EcoreUtil
+import java.util.List
 
 /**
  * Downstream implementation of an OHS
@@ -27,9 +28,9 @@ class OpenHostServiceDownstreamGenerator {
 	Context context
 
 	/**
-	 * The whole LEMMA DML Model in order to find the upstream part of the OHS relation.
+	 * All instantiated LEMMA DataModels so far in order to find the upstream part of the OHS relation.
 	 */
-	DataModel dataModel
+	List<DataModel> dataModels
 
 	/**
 	 * Context Map of the CML Model which contains  OHS-relations of the LEMMA DML {@link Context}. The {@link Context} must have the same name
@@ -37,9 +38,9 @@ class OpenHostServiceDownstreamGenerator {
 	 */
 	ContextMap map
 
-	new(Context context, DataModel dataModel, ContextMap map) {
+	new(Context context, List<DataModel> dataModels, ContextMap map) {
 		this.context = context
-		this.dataModel = dataModel
+		this.dataModels = dataModels
 		this.map = map
 	}
 
@@ -51,11 +52,11 @@ class OpenHostServiceDownstreamGenerator {
 		}
 
 		// For every Application Service that is responsible for exposing an aggregate an Accessor will be generated.
-		
 		for (rel : rr) {
 			val upstreamBoundedContext = (rel as UpstreamDownstreamRelationship).upstream
+			val allContexts = this.dataModels.stream().flatMap([dataModel|dataModel.contexts.stream()])
 			// Look up the Context that contains the Application Services which expose the aggregates of the relationship
-			this.dataModel.contexts.stream.filter [ context |
+			allContexts.filter [ context |
 				context.name.equals(upstreamBoundedContext.name)
 			].findFirst().ifPresent() [ upstreamContext |
 				// For every exposed aggregate X look up the Application Service in the LEMMA Context that exposes X
@@ -88,21 +89,19 @@ class OpenHostServiceDownstreamGenerator {
 		val accessor = DATA_FACTORY.createDataStructure
 		accessor.name = appService.name.replace("Api", "Accessor")
 		accessor.features.add(ComplexTypeFeature.APPLICATION_SERVICE)
-		
+
 		// Add operations
-		appService.operations.forEach[appServiceOp|
+		appService.operations.forEach [ appServiceOp |
 			// But only add those operations that have a Dtos as parameters or only primitive types
 			// in order to keep the domain model save from the upstream domain model
 			val dto = appServiceOp.parameters.filter [ param |
 				param.complexType !== null && param.complexType.name.contains("Dto")
 			]
- 			
+
 			if (dto.size == appServiceOp.parameters.size) {
 				accessor.operations.add(EcoreUtil.copy(appServiceOp))
-				// In order to use the dto, it must be added to the Context TODO s. Fragen
-				//this.context.complexTypes.add(dto.get.complexType)
-			} 
-			else { // check for only primitives
+			// In order to use the dto, it must be added to the Context
+			} else { // check for only primitives
 				val primitives = appServiceOp.parameters.stream.filter [ param |
 					param.primitiveType !== null
 				].collect(Collectors.toList())

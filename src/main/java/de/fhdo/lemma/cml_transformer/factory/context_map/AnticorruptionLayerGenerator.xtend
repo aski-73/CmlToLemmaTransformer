@@ -24,9 +24,9 @@ class AnticorruptionLayerGenerator {
 	static val DATA_FACTORY = DataFactory.eINSTANCE
 	
 	/**
-	 * Mapped LEMMA {@link DataModel} which contains all {@link Context}s
+	 * All instantiated LEMMA DataModels so far
 	 */
-	DataModel dataModel
+	List<DataModel> dataModels
 
 	/**
 	 * Mapped LEMMA DML {@link Context} which receives an Translator
@@ -41,8 +41,8 @@ class AnticorruptionLayerGenerator {
 
 	List<String> errors
 
-	new(Context context, DataModel dataModel, ContextMap map, List<String> errors) {
-		this.dataModel = dataModel
+	new(Context context, List<DataModel> dataModels, ContextMap map, List<String> errors) {
+		this.dataModels = dataModels
 		this.context = context
 		this.map = map
 		this.errors = errors
@@ -60,8 +60,10 @@ class AnticorruptionLayerGenerator {
 
 		rr.stream.forEach([ rel |
 			val cmlUpstreamContext = (rel as UpstreamDownstreamRelationship).upstream
+			val allContexts = this.dataModels.stream().flatMap([dataModel|dataModel.contexts.stream()])
+			
 			// Filter the matching LEMMA context. Use findAny because only one will be found at most
-			val lemmaUpstreamContext = this.dataModel.contexts.stream.filter([ctx | ctx.name.equals(cmlUpstreamContext.name)]).findAny() 
+			val lemmaUpstreamContext = allContexts.filter([ctx | ctx.name.equals(cmlUpstreamContext.name)]).findAny() 
 			if (lemmaUpstreamContext.empty) {
 				this.errors.add('''Mapping Error: A Mapping of the CML context «cmlUpstreamContext.name» was not found.''')
 				return

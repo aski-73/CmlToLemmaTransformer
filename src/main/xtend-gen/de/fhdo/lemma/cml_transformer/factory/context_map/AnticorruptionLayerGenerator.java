@@ -109,9 +109,9 @@ public class AnticorruptionLayerGenerator {
   private static final DataFactory DATA_FACTORY = DataFactory.eINSTANCE;
   
   /**
-   * Mapped LEMMA {@link DataModel} which contains all {@link Context}s
+   * All instantiated LEMMA DataModels so far
    */
-  private DataModel dataModel;
+  private List<DataModel> dataModels;
   
   /**
    * Mapped LEMMA DML {@link Context} which receives an Translator
@@ -126,8 +126,8 @@ public class AnticorruptionLayerGenerator {
   
   private List<String> errors;
   
-  public AnticorruptionLayerGenerator(final Context context, final DataModel dataModel, final ContextMap map, final List<String> errors) {
-    this.dataModel = dataModel;
+  public AnticorruptionLayerGenerator(final Context context, final List<DataModel> dataModels, final ContextMap map, final List<String> errors) {
+    this.dataModels = dataModels;
     this.context = context;
     this.map = map;
     this.errors = errors;
@@ -144,10 +144,14 @@ public class AnticorruptionLayerGenerator {
     final BoundedContext cmlDownstreamContext = ((UpstreamDownstreamRelationship) _get).getDownstream();
     final Consumer<Relationship> _function = (Relationship rel) -> {
       final BoundedContext cmlUpstreamContext = ((UpstreamDownstreamRelationship) rel).getUpstream();
-      final Predicate<Context> _function_1 = (Context ctx) -> {
+      final Function<DataModel, Stream<Context>> _function_1 = (DataModel dataModel) -> {
+        return dataModel.getContexts().stream();
+      };
+      final Stream<Context> allContexts = this.dataModels.stream().<Context>flatMap(_function_1);
+      final Predicate<Context> _function_2 = (Context ctx) -> {
         return ctx.getName().equals(cmlUpstreamContext.getName());
       };
-      final Optional<Context> lemmaUpstreamContext = this.dataModel.getContexts().stream().filter(_function_1).findAny();
+      final Optional<Context> lemmaUpstreamContext = allContexts.filter(_function_2).findAny();
       boolean _isEmpty = lemmaUpstreamContext.isEmpty();
       if (_isEmpty) {
         StringConcatenation _builder = new StringConcatenation();
@@ -158,36 +162,36 @@ public class AnticorruptionLayerGenerator {
         this.errors.add(_builder.toString());
         return;
       }
-      final Function<Aggregate, Stream<SimpleDomainObject>> _function_2 = (Aggregate agg) -> {
+      final Function<Aggregate, Stream<SimpleDomainObject>> _function_3 = (Aggregate agg) -> {
         return agg.getDomainObjects().stream();
       };
-      final Predicate<SimpleDomainObject> _function_3 = (SimpleDomainObject obj) -> {
+      final Predicate<SimpleDomainObject> _function_4 = (SimpleDomainObject obj) -> {
         return ((obj.getHint() != null) && obj.getHint().startsWith((DownstreamRole.ANTICORRUPTION_LAYER.getLiteral() + ":")));
       };
-      final Function<SimpleDomainObject, SimpleDomainObject> _function_4 = (SimpleDomainObject obj) -> {
+      final Function<SimpleDomainObject, SimpleDomainObject> _function_5 = (SimpleDomainObject obj) -> {
         String _hint = obj.getHint();
         String _literal = DownstreamRole.ANTICORRUPTION_LAYER.getLiteral();
         String _plus = (_literal + ":");
         obj.setHint(_hint.replace(_plus, ""));
         return obj;
       };
-      final Function<SimpleDomainObject, AnticorruptionLayerGenerator.FromTo> _function_5 = (SimpleDomainObject obj) -> {
+      final Function<SimpleDomainObject, AnticorruptionLayerGenerator.FromTo> _function_6 = (SimpleDomainObject obj) -> {
         boolean check = false;
         EList<Aggregate> _upstreamExposedAggregates = ((UpstreamDownstreamRelationship) rel).getUpstreamExposedAggregates();
         for (final Aggregate exposedAgg : _upstreamExposedAggregates) {
           boolean _equals_1 = exposedAgg.getName().equals(obj.getHint());
           if (_equals_1) {
-            final Predicate<ComplexType> _function_6 = (ComplexType cType) -> {
+            final Predicate<ComplexType> _function_7 = (ComplexType cType) -> {
               String _name_1 = cType.getName();
               String _name_2 = exposedAgg.getName();
               String _plus = (_name_2 + "Dto");
               return _name_1.equals(_plus);
             };
-            final ComplexType x = lemmaUpstreamContext.get().getComplexTypes().stream().filter(_function_6).findAny().get();
-            final Predicate<ComplexType> _function_7 = (ComplexType cType) -> {
+            final ComplexType x = lemmaUpstreamContext.get().getComplexTypes().stream().filter(_function_7).findAny().get();
+            final Predicate<ComplexType> _function_8 = (ComplexType cType) -> {
               return cType.getName().equals(obj.getName());
             };
-            final ComplexType y = this.context.getComplexTypes().stream().filter(_function_7).findAny().get();
+            final ComplexType y = this.context.getComplexTypes().stream().filter(_function_8).findAny().get();
             return new AnticorruptionLayerGenerator.FromTo(((DataStructure) x), ((DataStructure) y));
           }
         }
@@ -198,10 +202,10 @@ public class AnticorruptionLayerGenerator {
         }
         return null;
       };
-      final Predicate<AnticorruptionLayerGenerator.FromTo> _function_6 = (AnticorruptionLayerGenerator.FromTo fromTo) -> {
+      final Predicate<AnticorruptionLayerGenerator.FromTo> _function_7 = (AnticorruptionLayerGenerator.FromTo fromTo) -> {
         return (fromTo != null);
       };
-      final Consumer<AnticorruptionLayerGenerator.FromTo> _function_7 = (AnticorruptionLayerGenerator.FromTo fromTo) -> {
+      final Consumer<AnticorruptionLayerGenerator.FromTo> _function_8 = (AnticorruptionLayerGenerator.FromTo fromTo) -> {
         final DataStructure aclTranslator = AnticorruptionLayerGenerator.DATA_FACTORY.createDataStructure();
         String _name_1 = fromTo.source.getName();
         String _plus = (_name_1 + "Translator");
@@ -224,7 +228,7 @@ public class AnticorruptionLayerGenerator {
         aclTranslator.getOperations().add(op);
         this.context.getComplexTypes().add(aclTranslator);
       };
-      cmlDownstreamContext.getAggregates().stream().<SimpleDomainObject>flatMap(_function_2).filter(_function_3).<SimpleDomainObject>map(_function_4).<AnticorruptionLayerGenerator.FromTo>map(_function_5).filter(_function_6).forEach(_function_7);
+      cmlDownstreamContext.getAggregates().stream().<SimpleDomainObject>flatMap(_function_3).filter(_function_4).<SimpleDomainObject>map(_function_5).<AnticorruptionLayerGenerator.FromTo>map(_function_6).filter(_function_7).forEach(_function_8);
     };
     rr.stream().forEach(_function);
   }

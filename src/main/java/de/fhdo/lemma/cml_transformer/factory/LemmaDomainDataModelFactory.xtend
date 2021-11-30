@@ -32,6 +32,7 @@ import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceDownstre
 import de.fhdo.lemma.cml_transformer.factory.context_map.AnticorruptionLayerGenerator
 import org.eclipse.xtend.lib.annotations.Accessors
 import de.fhdo.lemma.cml_transformer.factory.context_map.ConformistGenerator
+import org.eclipse.emf.ecore.util.EcoreUtil
 
 /**
  * Model transformation from ContextMapper DSL (CML) to LEMMA Domain Data Modeling Language (DML)
@@ -95,38 +96,16 @@ class LemmaDomainDataModelFactory {
 	}
 
 	/**
-	 * Maps CML Model {@link ContextMappingModel} to LEMMA DML Model {@link DataModel}
+	 * Maps CML Model {@link BoundedContext} to LEMMA DML Model {@link DataModel}. The latter containing one {@link Context}
 	 */
-	def DataModel generateDataModel() {
+	def DataModel generateDataModel(BoundedContext bc) {
 		listsToGenerate = newLinkedList
 		dataModel = DATA_FACTORY.createDataModel
 
-		cmlModel.boundedContexts.forEach [ bc |
-			val ctx = mapBoundedContext2Context(bc);
-
-			// Tell the Context in which DataModel it is and visa versa
-			ctx.dataModel = dataModel
-			dataModel.contexts.add(ctx)
-		]
-
-		// Add Accessor for OHS API in the contexts which are OHS downstream contexts
-		for (ctx : dataModel.contexts) {
-			val ohsGenerator = new OpenHostServiceDownstreamGenerator(ctx, dataModel, cmlModel.map)
-			ohsGenerator.mapOhsDownstream()
-		}
-		
-		// Add Anticorruption Layer if needed
-		val errors = <String> newLinkedList
-		for (ctx : dataModel.contexts) {
-			val aclGenerator = new AnticorruptionLayerGenerator(ctx, dataModel, cmlModel.map, errors)
-			aclGenerator.mapAcl()
-		}
-		
-		// Add Conformist if needed
-		for (ctx : dataModel.contexts) {
-			val cofGenerator = new ConformistGenerator(ctx, cmlModel, new LemmaDomainDataModelFactory(this.cmlModel))
-			cofGenerator.mapCof()
-		}
+		val ctx = mapBoundedContext2Context(bc);
+		// Tell the Context in which DataModel it is and visa versa
+		ctx.dataModel = dataModel
+		dataModel.contexts.add(ctx)
 
 		return dataModel
 	}
@@ -213,7 +192,7 @@ class LemmaDomainDataModelFactory {
 	private def dispatch ComplexType mapDomainObject2ConcreteComplexType(DomainObject obj, Context ctx) {
 		val alreadyMappedType = obj.alreadyMapped(ctx)
 		if (alreadyMappedType !== null) {
-			return alreadyMappedType
+			return EcoreUtil.copy(alreadyMappedType)
 		}
 
 		val lemmaStructure = createDataStructure(obj.name)
@@ -571,7 +550,7 @@ class LemmaDomainDataModelFactory {
 	 * If its not existing, it will be created on the fly.
 	 */
 	private def ComplexType findComplexTypeBySimpleDomainObject(SimpleDomainObject sObj, Context ctx) {
-		for (lemmaComplexType : this.dataModel.complexTypes) {
+		for (lemmaComplexType : ctx.complexTypes) {
 			if (sObj.name.equals(lemmaComplexType.name))
 				return lemmaComplexType;
 		}

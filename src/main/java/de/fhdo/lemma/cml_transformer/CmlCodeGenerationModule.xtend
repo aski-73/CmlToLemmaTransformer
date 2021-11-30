@@ -17,6 +17,11 @@ import de.fhdo.lemma.cml_transformer.code_generators.ServiceDslExtractor
 import de.fhdo.lemma.cml_transformer.code_generators.DataDslExtractor
 import de.fhdo.lemma.technology.Technology
 import de.fhdo.lemma.cml_transformer.code_generators.TechnologyDslExtractor
+import de.fhdo.lemma.data.DataModel
+import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceDownstreamGenerator
+import de.fhdo.lemma.cml_transformer.factory.context_map.AnticorruptionLayerGenerator
+import de.fhdo.lemma.cml_transformer.factory.context_map.ConformistGenerator
+import org.eclipse.emf.ecore.util.EcoreUtil
 
 /** 
  * LEMMA's model processing framework supports model-based structuring of code
@@ -46,54 +51,96 @@ import de.fhdo.lemma.cml_transformer.code_generators.TechnologyDslExtractor
 	@NotNull override Map<String, Pair<String, Charset>> execute(@NotNull String[] phaseArguments,
 		@NotNull String[] moduleArguments) {
 		val Map<String, String> resultMap = new HashMap()
-		
+		val serviceModelPath = '''«getTargetFolder()»«File::separator»microservices'''
+		val dataModelPath = '''«getTargetFolder()»«File::separator»domain'''
+		val technologyModelPath = '''«getTargetFolder()»«File::separator»technology'''
+
+		/* 
+		 * Technologies are created with the {@link LemmaTechnologyFactory} which is used
+		 * in the {@link LemmaServiceModelFactory}. 
+		 * This list keeps track of all created technologies in order to put them into separate files.
+		 */
+		val technologies = <Technology>newLinkedList
+
 		/*
 		 * Retrieve the passed cml source model to work with (the above implementation
 		 * of {@link getLanguageNamespace} tells the framework that this module shall
 		 * work on cml source models).
 		 */
 		val ContextMappingModel cmlModel = (getResource().getContents().get(0) as ContextMappingModel)
-		
-		/* Instantiate Lemma DML by using a factory */
-		val factory = new LemmaDomainDataModelFactory(cmlModel)
-		val lemmaDataModel = factory.generateDataModel()
-		// System.out.println(DomainDataModelCodeGenerator.printDataModel(lemmaDataModel))
-		val dataExtractor = new DataDslExtractor()
-		System.out.println(dataExtractor.extractToString(lemmaDataModel))
-		for (ctx: lemmaDataModel.contexts) {
-			val ctxPath = '''«getTargetFolder()»«File::separator»domain«File::separator»«ctx.name».data'''.toString
+
+		/*
+		 * Instantiate LEMMA DataModels by using a factory for each CML BoundedContext
+		 */
+		val dataModels = <DataModel>newLinkedList
+		for (bc : cmlModel.boundedContexts) {
+			val factory = new LemmaDomainDataModelFactory(cmlModel)
+			val dataModel = factory.generateDataModel(bc)
+			dataModels.add(dataModel)
+		}
+
+		/*
+		 * Add Context Map Implementation for each Data Model. A single Context needs
+		 * references to all created Context in order to implement the context map
+		 * relations.
+		 * E. g. a conformist (downstream) needs to know about the upstream context in order to 
+		 * copy the exposed aggregates.
+		 */
+		for (dataModel : dataModels) {
+			// Since a DataModels contains only one context get the first element of the list
+			val ctx = dataModel.contexts.get(0)
+
+			// Add Accessor for OHS API in the contexts which are OHS downstream contexts
+			val ohsGenerator = new OpenHostServiceDownstreamGenerator(ctx, dataModels, cmlModel.map)
+			ohsGenerator.mapOhsDownstream()
+
+			// Add Anticorruption Layer if needed
+			val errors = <String>newLinkedList
+			val aclGenerator = new AnticorruptionLayerGenerator(ctx, dataModels, cmlModel.map, errors)
+			aclGenerator.mapAcl()
+
+			// Add Conformist if needed
+			val cofGenerator = new ConformistGenerator(ctx, cmlModel, new LemmaDomainDataModelFactory(cmlModel))
+			cofGenerator.mapCof()
+
+			/* 
+			 * Instantiate a Lemma ServiceModel by using a factory for the previously created Context.
+			 * At the same time Technologies will be created if a specific one is identified in the CML Model 
+			 */
+			val serviceModelFactory = new LemmaServiceModelFactory(cmlModel, EcoreUtil.copy(ctx), technologies)
+			val serviceModel = serviceModelFactory.buildServiceModel(dataModelPath, serviceModelPath,
+				technologyModelPath)
+
+			/*
+			 * Code Generation DML
+			 */
+			val dataExtractor = new DataDslExtractor()
+			System.out.println(dataExtractor.extractToString(dataModel))
+			val ctxPath = '''«dataModelPath»«File::separator»«ctx.name».data'''.toString
 			val ctxCode = dataExtractor.extractToString(ctx)
 			resultMap.put(ctxPath, ctxCode)
-		}
-		
-		/* 
-		 * Technologies are created with the {@link LemmaTechnologyFactory} which is used
-		 * in the {@link LemmaServiceModelFactory}. 
-		 * This list keeps track of all created technologies in order to put them into separate files.
-		 */
-		 val technologies = <Technology> newLinkedList
-		
-		/* For every context of the dataModel instantiate a Lemma SML by using a factory */
-		for (ctx: lemmaDataModel.contexts) {
-			val serviceModelFactory = new LemmaServiceModelFactory(cmlModel, ctx, technologies)
-			val serviceModel = serviceModelFactory.buildServiceModel()
+
+			/*
+			 * Code Generation SML
+			 */
 			val serviceExtractor = new ServiceDslExtractor()
-			
-			val servicePath = '''«getTargetFolder()»«File::separator»microservices«File::separator»«ctx.name».services'''.toString
+			val servicePath = '''«serviceModelPath»«File::separator»«ctx.name».services'''.toString
 			val serviceCode = serviceExtractor.extractToString(serviceModel)
 			resultMap.put(servicePath, serviceCode)
 			System.out.println(serviceCode)
 		}
-		
-		/* Every created Technology Model will be put in a separate file */
+
+		/*
+		 * Code Generation TML
+		 */
 		val technologyExtractor = new TechnologyDslExtractor()
-		for (technology: technologies) {
-			val technologyPath = '''«getTargetFolder()»«File::separator»technology«File::separator»«technology.name».technology'''.toString
+		for (technology : technologies) {
+			val technologyPath = '''«technologyModelPath»«File::separator»«technology.name».technology'''.toString
 			val technologyCode = technologyExtractor.extractToString(technology).toString
 			resultMap.put(technologyPath, technologyCode)
 			System.out.println(technologyCode)
 		}
-		
+
 		return withCharset(resultMap, StandardCharsets::UTF_8.name())
 	}
 
