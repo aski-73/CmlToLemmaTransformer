@@ -1,6 +1,5 @@
 package de.fhdo.lemma.cml_transformer
 
-import de.fhdo.lemma.cml_transformer.factory.LemmaDomainDataModelFactory
 import de.fhdo.lemma.model_processing.annotations.CodeGenerationModule
 import de.fhdo.lemma.model_processing.builtin_phases.code_generation.AbstractCodeGenerationModule
 import java.io.File
@@ -12,7 +11,6 @@ import kotlin.Pair
 import org.contextmapper.dsl.contextMappingDSL.ContextMappingDSLPackage
 import org.contextmapper.dsl.contextMappingDSL.ContextMappingModel
 import org.jetbrains.annotations.NotNull
-import de.fhdo.lemma.cml_transformer.factory.LemmaServiceModelFactory
 import de.fhdo.lemma.cml_transformer.code_generators.ServiceDslExtractor
 import de.fhdo.lemma.cml_transformer.code_generators.DataDslExtractor
 import de.fhdo.lemma.technology.Technology
@@ -22,13 +20,17 @@ import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceDownstre
 import de.fhdo.lemma.cml_transformer.factory.context_map.AnticorruptionLayerGenerator
 import de.fhdo.lemma.cml_transformer.factory.context_map.ConformistGenerator
 import org.eclipse.emf.ecore.util.EcoreUtil
+import de.fhdo.lemma.cml_transformer.factory.DomainDataModelFactory
+import de.fhdo.lemma.cml_transformer.factory.ServiceModelFactory
+import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceUpstreamGenerator
 
 /** 
  * LEMMA's model processing framework supports model-based structuring of code
  * generators. This class implements a code generation module as expected by the
  * framework, i.e., the class receives the{@link CodeGenerationModule}annotation and extends{@link AbstractCodeGenerationModule}.
  */
-@CodeGenerationModule(name="main") class CmlCodeGenerationModule extends AbstractCodeGenerationModule {
+@CodeGenerationModule(name="main") class LemmaCodeGenerationModule extends AbstractCodeGenerationModule {
+
 	/** 
 	 * Return the namespace of the modeling language, from whose models code can be
 	 * generated
@@ -54,7 +56,6 @@ import org.eclipse.emf.ecore.util.EcoreUtil
 		val serviceModelPath = '''«getTargetFolder()»«File::separator»microservices'''
 		val dataModelPath = '''«getTargetFolder()»«File::separator»domain'''
 		val technologyModelPath = '''«getTargetFolder()»«File::separator»technology'''
-
 		/* 
 		 * Technologies are created with the {@link LemmaTechnologyFactory} which is used
 		 * in the {@link LemmaServiceModelFactory}. 
@@ -74,7 +75,7 @@ import org.eclipse.emf.ecore.util.EcoreUtil
 		 */
 		val dataModels = <DataModel>newLinkedList
 		for (bc : cmlModel.boundedContexts) {
-			val factory = new LemmaDomainDataModelFactory(cmlModel)
+			val factory = new DomainDataModelFactory()
 			val dataModel = factory.generateDataModel(bc)
 			dataModels.add(dataModel)
 		}
@@ -90,26 +91,30 @@ import org.eclipse.emf.ecore.util.EcoreUtil
 			// Since a DataModels contains only one context get the first element of the list
 			val ctx = dataModel.contexts.get(0)
 
-			// Add Accessor for OHS API in the contexts which are OHS downstream contexts
-			val ohsGenerator = new OpenHostServiceDownstreamGenerator(ctx, dataModels, cmlModel.map)
-			ohsGenerator.mapOhsDownstream()
+			// Add OHS Accessor(s) in the context if he is an OHS downstream context
+			val ohsGenerator = new OpenHostServiceDownstreamGenerator(ctx, cmlModel.map, dataModels)
+			ohsGenerator.map()
 
-			// Add Anticorruption Layer if needed
-			val errors = <String>newLinkedList
-			val aclGenerator = new AnticorruptionLayerGenerator(ctx, dataModels, cmlModel.map, errors)
-			aclGenerator.mapAcl()
+			// Add Anticorruption Layer if context is an ACL
+			val aclGenerator = new AnticorruptionLayerGenerator(ctx, cmlModel.map, dataModels)
+			aclGenerator.map()
 
-			// Add Conformist if needed
-			val cofGenerator = new ConformistGenerator(ctx, cmlModel, new LemmaDomainDataModelFactory(cmlModel))
-			cofGenerator.mapCof()
+			// Add Conformist if context is an Conformist
+			val cofGenerator = new ConformistGenerator(ctx, cmlModel.map)
+			cofGenerator.map()
 
 			/* 
 			 * Instantiate a Lemma ServiceModel by using a factory for the previously created Context.
 			 * At the same time Technologies will be created if a specific one is identified in the CML Model 
 			 */
-			val serviceModelFactory = new LemmaServiceModelFactory(cmlModel, EcoreUtil.copy(ctx), technologies)
-			val serviceModel = serviceModelFactory.buildServiceModel(dataModelPath, serviceModelPath,
+			val serviceModelFactory = new ServiceModelFactory(cmlModel, EcoreUtil.copy(ctx))
+			val serviceModel = serviceModelFactory.generateServiceModel(dataModelPath, serviceModelPath,
 				technologyModelPath)
+				
+			// Add OHS Api(s) in the previously generated microservice if he is an upstream context in an OHS relatioship
+			val ohsUpstreamGenerator = new OpenHostServiceUpstreamGenerator(ctx, serviceModel,
+				serviceModel.microservices.get(0), cmlModel.map, dataModelPath, technologyModelPath, technologies)
+			ohsUpstreamGenerator.map()
 
 			/*
 			 * Code Generation DML

@@ -26,6 +26,7 @@ import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.xtend.lib.annotations.Data;
 import org.eclipse.xtend2.lib.StringConcatenation;
+import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Pure;
 import org.eclipse.xtext.xbase.lib.util.ToStringBuilder;
 
@@ -36,7 +37,7 @@ import org.eclipse.xtext.xbase.lib.util.ToStringBuilder;
  * "ACL:EXPOSED_AGGREGATE_NAME" in order to tell the translator who X is.
  */
 @SuppressWarnings("all")
-public class AnticorruptionLayerGenerator {
+public class AnticorruptionLayerGenerator extends AbstractRelationshipGenerator {
   /**
    * Container class that contains X and Y (see class description)
    * source = X
@@ -109,31 +110,34 @@ public class AnticorruptionLayerGenerator {
   private static final DataFactory DATA_FACTORY = DataFactory.eINSTANCE;
   
   /**
-   * All instantiated LEMMA DataModels so far
+   * Checks if the given {@link ComplexType} already exists in the {@link Context}.
+   * If not it will be added to the {@link Context}.
+   * 
+   * @return Found or newly created {@link ComplexType} of the given {@link Context}
    */
-  private List<DataModel> dataModels;
-  
-  /**
-   * Mapped LEMMA DML {@link Context} which receives an Translator
-   */
-  private Context context;
-  
-  /**
-   * Context Map of the CML Model which contains  ACL-relations of the LEMMA DML {@value context}. The {@link Context} must have the same name
-   * as the {@link BoundedContext} in the Context Map in order to map them.
-   */
-  private ContextMap map;
+  public static ComplexType findComplexTypeAndCreateIfNotExisting(final ComplexType cType, final Context ctx) {
+    EList<ComplexType> _complexTypes = ctx.getComplexTypes();
+    for (final ComplexType c : _complexTypes) {
+      boolean _equals = cType.getName().equals(c.getName());
+      if (_equals) {
+        return c;
+      }
+    }
+    final ComplexType copyComplexType = EcoreUtil.<ComplexType>copy(cType);
+    copyComplexType.setContext(ctx);
+    ctx.getComplexTypes().add(copyComplexType);
+    return copyComplexType;
+  }
   
   private List<String> errors;
   
-  public AnticorruptionLayerGenerator(final Context context, final List<DataModel> dataModels, final ContextMap map, final List<String> errors) {
-    this.dataModels = dataModels;
-    this.context = context;
-    this.map = map;
-    this.errors = errors;
+  public AnticorruptionLayerGenerator(final Context context, final ContextMap map, final List<DataModel> dataModels) {
+    super(context, map, dataModels);
+    this.errors = CollectionLiterals.<String>newLinkedList();
   }
   
-  public void mapAcl() {
+  @Override
+  public void map() {
     final List<Relationship> rr = this.filter();
     int _size = rr.size();
     boolean _equals = (_size == 0);
@@ -147,7 +151,7 @@ public class AnticorruptionLayerGenerator {
       final Function<DataModel, Stream<Context>> _function_1 = (DataModel dataModel) -> {
         return dataModel.getContexts().stream();
       };
-      final Stream<Context> allContexts = this.dataModels.stream().<Context>flatMap(_function_1);
+      final Stream<Context> allContexts = this.mappedDataModels.stream().<Context>flatMap(_function_1);
       final Predicate<Context> _function_2 = (Context ctx) -> {
         return ctx.getName().equals(cmlUpstreamContext.getName());
       };
@@ -191,7 +195,7 @@ public class AnticorruptionLayerGenerator {
             final Predicate<ComplexType> _function_8 = (ComplexType cType) -> {
               return cType.getName().equals(obj.getName());
             };
-            final ComplexType y = this.context.getComplexTypes().stream().filter(_function_8).findAny().get();
+            final ComplexType y = this.targetCtx.getComplexTypes().stream().filter(_function_8).findAny().get();
             return new AnticorruptionLayerGenerator.FromTo(((DataStructure) x), ((DataStructure) y));
           }
         }
@@ -213,7 +217,7 @@ public class AnticorruptionLayerGenerator {
         aclTranslator.getFeatures().add(ComplexTypeFeature.DOMAIN_SERVICE);
         final DataOperationParameter opParam = AnticorruptionLayerGenerator.DATA_FACTORY.createDataOperationParameter();
         opParam.setName(String.valueOf(fromTo.source.getName().charAt(0)).toLowerCase());
-        opParam.setComplexType(fromTo.source);
+        opParam.setComplexType(AnticorruptionLayerGenerator.findComplexTypeAndCreateIfNotExisting(fromTo.source, this.targetCtx));
         final DataOperation op = AnticorruptionLayerGenerator.DATA_FACTORY.createDataOperation();
         StringConcatenation _builder_1 = new StringConcatenation();
         _builder_1.append("transform");
@@ -226,7 +230,7 @@ public class AnticorruptionLayerGenerator {
         op.setComplexReturnType(EcoreUtil.<DataStructure>copy(fromTo.target));
         op.getParameters().add(opParam);
         aclTranslator.getOperations().add(op);
-        this.context.getComplexTypes().add(aclTranslator);
+        this.targetCtx.getComplexTypes().add(aclTranslator);
       };
       cmlDownstreamContext.getAggregates().stream().<SimpleDomainObject>flatMap(_function_3).filter(_function_4).<SimpleDomainObject>map(_function_5).<AnticorruptionLayerGenerator.FromTo>map(_function_6).filter(_function_7).forEach(_function_8);
     };
@@ -236,16 +240,17 @@ public class AnticorruptionLayerGenerator {
   /**
    * Filter the context maps where the {@value context} is the downstream context since an ACL is placed in a downstream context
    */
-  private List<Relationship> filter() {
+  @Override
+  public List<Relationship> filter() {
     final Predicate<Relationship> _function = (Relationship rel) -> {
       return (rel instanceof UpstreamDownstreamRelationship);
     };
     final Predicate<Relationship> _function_1 = (Relationship rel) -> {
-      return ((UpstreamDownstreamRelationship) rel).getDownstream().getName().equals(this.context.getName());
+      return ((UpstreamDownstreamRelationship) rel).getDownstream().getName().equals(this.targetCtx.getName());
     };
     final Predicate<Relationship> _function_2 = (Relationship rel) -> {
       return ((UpstreamDownstreamRelationship) rel).getDownstreamRoles().contains(DownstreamRole.ANTICORRUPTION_LAYER);
     };
-    return this.map.getRelationships().stream().filter(_function).filter(_function_1).filter(_function_2).collect(Collectors.<Relationship>toList());
+    return this.inputMap.getRelationships().stream().filter(_function).filter(_function_1).filter(_function_2).collect(Collectors.<Relationship>toList());
   }
 }

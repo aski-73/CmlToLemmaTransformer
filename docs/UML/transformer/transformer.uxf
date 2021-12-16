@@ -1,0 +1,82 @@
+<diagram program="umletino" version="14.4.0-SNAPSHOT"><zoom_level>10</zoom_level><help_text>Space for diagram notes</help_text><element><id>UMLClass</id><coordinates><x>903</x><y>469</y><w>250</w><h>70</h></coordinates><panel_attributes>*/AbstractRelationshipGenerator/*
+--
+# filter():  List&lt;ContextMapper::Relationship&gt;
+# map(): void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>873</x><y>569</y><w>240</w><h>30</h></coordinates><panel_attributes>*OpenHostServiceDownstreamGenerator*
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>873</x><y>609</y><w>240</w><h>30</h></coordinates><panel_attributes>*AnticorruptionLayerGenerator*
+
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>1103</x><y>529</y><w>40</w><h>120</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>20;10;20;100;10;100</additional_attributes></element><element><id>Relation</id><coordinates><x>973</x><y>529</y><w>30</w><h>60</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>10;10;10;40</additional_attributes></element><element><id>UMLClass</id><coordinates><x>623</x><y>559</y><w>200</w><h>30</h></coordinates><panel_attributes>*DomainData::DataModel*</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>623</x><y>479</y><w>200</w><h>30</h></coordinates><panel_attributes>*ContextMapper::ContextMap*</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>623</x><y>439</y><w>240</w><h>30</h></coordinates><panel_attributes>*ContextMapper::ContextMappingModel*</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>813</x><y>479</y><w>110</w><h>50</h></coordinates><panel_attributes>lt=&lt;-
+m1=1
+r1=inputMap</panel_attributes><additional_attributes>10;20;90;20</additional_attributes></element><element><id>Relation</id><coordinates><x>813</x><y>509</y><w>110</w><h>50</h></coordinates><panel_attributes>lt=&lt;-
+m1=1
+r1=targetCtx</panel_attributes><additional_attributes>10;20;90;20</additional_attributes></element><element><id>UMLClass</id><coordinates><x>623</x><y>519</y><w>200</w><h>30</h></coordinates><panel_attributes>*DomainData::Context*</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>813</x><y>529</y><w>160</w><h>60</h></coordinates><panel_attributes>lt=&lt;-
+m1=1..*
+r1=mappedDataModels</panel_attributes><additional_attributes>10;30;140;30;140;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>873</x><y>649</y><w>240</w><h>30</h></coordinates><panel_attributes>*ConformistGenerator*</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>1103</x><y>529</y><w>40</w><h>160</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>20;10;20;140;10;140</additional_attributes></element><element><id>UMLClass</id><coordinates><x>73</x><y>569</y><w>470</w><h>70</h></coordinates><panel_attributes>*DomainDataModelFactory*
+--
+_+ mapAggregateToComplexType(a: CM::Aggregate):DomainData::ComplexType_
++ generateDataModel(bc: CM::BoundedContext): DataModel</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>73</x><y>449</y><w>470</w><h>90</h></coordinates><panel_attributes>*ServiceModelFactory*
+--
+_+ mapBcTypeToServiceType(t: CM::BoundedContextType):Service::MicroserviceType_
+_+ mapBcTypeToServiceVisibility(t: CM::BoundedContextType):Service::Visibility_
++ generateServiceModel(dataModelPath: String, 
+    serviceModelPath: String, technologyModelPath: String) :ServiceModel</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>563</x><y>319</y><w>190</w><h>70</h></coordinates><panel_attributes>*LemmaCodeGenerationModule*
+--
+serviceModelPath: String
+dataModelPath: String
+technologyModelPath: String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>873</x><y>689</y><w>240</w><h>70</h></coordinates><panel_attributes>*OpenHostServiceUpstreamGenerator*
+--
+- technologyModelPath: String
+- domainDataModelPath: String</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>1103</x><y>529</y><w>40</w><h>200</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>20;10;20;180;10;180</additional_attributes></element><element><id>UMLClass</id><coordinates><x>623</x><y>739</y><w>200</w><h>30</h></coordinates><panel_attributes>*Technology::Technology*</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>813</x><y>739</y><w>80</w><h>40</h></coordinates><panel_attributes>lt=&lt;-
+m1=*</panel_attributes><additional_attributes>10;10;60;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>623</x><y>659</y><w>200</w><h>30</h></coordinates><panel_attributes>*Service::Microservice*</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>623</x><y>699</y><w>200</w><h>30</h></coordinates><panel_attributes>*Service::ServiceModel*</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>813</x><y>659</y><w>80</w><h>60</h></coordinates><panel_attributes>lt=&lt;-
+m1= 1</panel_attributes><additional_attributes>10;10;30;10;30;40;60;40</additional_attributes></element><element><id>Relation</id><coordinates><x>813</x><y>699</y><w>80</w><h>40</h></coordinates><panel_attributes>lt=&lt;-
+m1=1</panel_attributes><additional_attributes>10;10;60;10</additional_attributes></element><element><id>Relation</id><coordinates><x>533</x><y>439</y><w>110</w><h>50</h></coordinates><panel_attributes>lt=&lt;-
+m1=1
+r1=inputCml</panel_attributes><additional_attributes>90;20;10;20</additional_attributes></element><element><id>Relation</id><coordinates><x>533</x><y>499</y><w>110</w><h>50</h></coordinates><panel_attributes>lt=&lt;-
+m1=1
+r1=inputCtx</panel_attributes><additional_attributes>90;20;10;20</additional_attributes></element><element><id>UMLClass</id><coordinates><x>173</x><y>729</y><w>370</w><h>60</h></coordinates><panel_attributes>*TechnologyModelFactory*
+--
++ mapMethodNamesToServiceAspectNames(methodName. String)
++ generateTechnologyModel(implTechnology: String):Technology</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>123</x><y>339</y><w>190</w><h>30</h></coordinates><panel_attributes>*CmlModelProcessor*</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>343</x><y>339</y><w>190</w><h>30</h></coordinates><panel_attributes>*LanguageDescriptions*</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>563</x><y>269</y><w>190</w><h>30</h></coordinates><panel_attributes>/*AbstractCodeGenerationModule*/</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>643</x><y>289</y><w>30</w><h>50</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>10;10;10;30</additional_attributes></element><element><id>UMLClass</id><coordinates><x>343</x><y>269</y><w>190</w><h>40</h></coordinates><panel_attributes>&lt;&lt;interface&gt;&gt;
+*LanguageDescriptionProviderI*</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>123</x><y>269</y><w>190</w><h>30</h></coordinates><panel_attributes>*/AbstractModelProcessor/*
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>429</x><y>300</y><w>30</w><h>60</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>10;10;10;40</additional_attributes></element><element><id>Relation</id><coordinates><x>213</x><y>289</y><w>30</w><h>70</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>10;10;10;50</additional_attributes></element><element><id>Relation</id><coordinates><x>649</x><y>380</y><w>80</w><h>80</h></coordinates><panel_attributes>lt=&lt;.
+&lt;&lt;creates&gt;&gt;</panel_attributes><additional_attributes>10;60;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>533</x><y>739</y><w>110</w><h>40</h></coordinates><panel_attributes>lt=&lt;.
+&lt;&lt;creates&gt;&gt;</panel_attributes><additional_attributes>90;20;10;20</additional_attributes></element><element><id>Relation</id><coordinates><x>43</x><y>459</y><w>600</w><h>280</h></coordinates><panel_attributes>lt=&lt;.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+&lt;&lt;creates&gt;&gt;</panel_attributes><additional_attributes>580;250;10;250;10;20;30;20</additional_attributes></element><element><id>Relation</id><coordinates><x>53</x><y>499</y><w>590</w><h>190</h></coordinates><panel_attributes>lt=&lt;.
+
+
+
+
+
+
+
+
+
+
+
+&lt;&lt;creates&gt;&gt;</panel_attributes><additional_attributes>570;170;10;170;10;10;20;10</additional_attributes></element><element><id>Relation</id><coordinates><x>533</x><y>529</y><w>110</w><h>70</h></coordinates><panel_attributes>lt=&lt;.
+&lt;&lt;creates&gt;&gt;</panel_attributes><additional_attributes>90;10;20;10;20;50;10;50</additional_attributes></element><element><id>Relation</id><coordinates><x>533</x><y>579</y><w>190</w><h>50</h></coordinates><panel_attributes>lt=&lt;.
+&lt;&lt;creates&gt;&gt;</panel_attributes><additional_attributes>120;10;120;30;10;30</additional_attributes></element><element><id>Relation</id><coordinates><x>529</x><y>750</y><w>480</w><h>60</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>460;10;460;40;10;40</additional_attributes></element><element><id>UMLClass</id><coordinates><x>623</x><y>619</y><w>200</w><h>30</h></coordinates><panel_attributes>*ContextMapper::BoundedContext*</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>533</x><y>619</y><w>110</w><h>40</h></coordinates><panel_attributes>lt=&lt;.
+&lt;&lt;uses&gt;&gt;</panel_attributes><additional_attributes>90;20;10;20</additional_attributes></element><element><id>UMLPackage</id><coordinates><x>39</x><y>220</y><w>1130</w><h>590</h></coordinates><panel_attributes>CmlToLemmaTransformer
+--</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>853</x><y>319</y><w>300</w><h>50</h></coordinates><panel_attributes>*DataDslExtractor*
+--
++ extractToString(m: DomainData::DataModel): String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>853</x><y>259</y><w>300</w><h>50</h></coordinates><panel_attributes>*ServiceDslExtractor*
+--
++ extractToString(m: Service::ServiceModel): String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>853</x><y>379</y><w>300</w><h>50</h></coordinates><panel_attributes>*TechnologyDslExtractor*
+--
++ extractToString(m: Technology::Technology): String</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>745</x><y>280</y><w>130</w><h>70</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>10;50;70;50;70;10;110;10</additional_attributes></element><element><id>Relation</id><coordinates><x>745</x><y>340</y><w>130</w><h>30</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>10;10;110;10</additional_attributes></element><element><id>Relation</id><coordinates><x>745</x><y>360</y><w>130</w><h>60</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>10;10;70;10;70;40;110;40</additional_attributes></element></diagram>

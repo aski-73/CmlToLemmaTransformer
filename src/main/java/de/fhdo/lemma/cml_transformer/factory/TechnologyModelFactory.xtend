@@ -9,7 +9,7 @@ import de.fhdo.lemma.technology.ServiceAspect
 /**
  * Mapping CML "implementationTechnology" to LEMMA Technology Model
  */
-class LemmaTechnologyModelFactory {
+class TechnologyModelFactory {
 	static val TECHNOLOGY_FACTORY = TechnologyFactory.eINSTANCE
 	
 	/**
@@ -62,7 +62,7 @@ class LemmaTechnologyModelFactory {
 	/**
 	 * Maps CML implementationTechnology Keyword to specific LEMMA Technologies
 	 */
-	def mapImplementationTechnologyToTechnologymodel(String implementationTechnology) {
+	def generateTechnologymodel(String implementationTechnology) {
 		if (implementationTechnology !== null && implementationTechnology.equals("RESTfulHttp")) {
 			return createRestTechnology()
 		} else {

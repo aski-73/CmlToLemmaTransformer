@@ -34,33 +34,16 @@ import org.eclipse.xtext.xbase.lib.IterableExtensions;
  * the Api of the OHS upstream that exposes an aggregate
  */
 @SuppressWarnings("all")
-public class OpenHostServiceDownstreamGenerator {
+public class OpenHostServiceDownstreamGenerator extends AbstractRelationshipGenerator {
   private static final DataFactory DATA_FACTORY = DataFactory.eINSTANCE;
   
-  /**
-   * Mapped LEMMA DML {@link Context} which receives an Accessor
-   */
-  private Context context;
-  
-  /**
-   * All instantiated LEMMA DataModels so far in order to find the upstream part of the OHS relation.
-   */
-  private List<DataModel> dataModels;
-  
-  /**
-   * Context Map of the CML Model which contains  OHS-relations of the LEMMA DML {@link Context}. The {@link Context} must have the same name
-   * as the {@link BoundedContext} in the Context Map in order to map them.
-   */
-  private ContextMap map;
-  
-  public OpenHostServiceDownstreamGenerator(final Context context, final List<DataModel> dataModels, final ContextMap map) {
-    this.context = context;
-    this.dataModels = dataModels;
-    this.map = map;
+  public OpenHostServiceDownstreamGenerator(final Context context, final ContextMap map, final List<DataModel> dataModels) {
+    super(context, map, dataModels);
   }
   
-  public void mapOhsDownstream() {
-    final List<Relationship> rr = this.filterDownstreamRelationships();
+  @Override
+  public void map() {
+    final List<Relationship> rr = this.filter();
     int _size = rr.size();
     boolean _equals = (_size == 0);
     if (_equals) {
@@ -72,7 +55,7 @@ public class OpenHostServiceDownstreamGenerator {
         final Function<DataModel, Stream<Context>> _function = (DataModel dataModel) -> {
           return dataModel.getContexts().stream();
         };
-        final Stream<Context> allContexts = this.dataModels.stream().<Context>flatMap(_function);
+        final Stream<Context> allContexts = this.mappedDataModels.stream().<Context>flatMap(_function);
         final Predicate<Context> _function_1 = (Context context) -> {
           return context.getName().equals(upstreamBoundedContext.getName());
         };
@@ -93,11 +76,11 @@ public class OpenHostServiceDownstreamGenerator {
                 String _plus = (_name_1 + "Accessor");
                 return _name.equals(_plus);
               };
-              final Optional<ComplexType> accessorService = this.context.getComplexTypes().stream().filter(_function_4).findFirst();
+              final Optional<ComplexType> accessorService = this.targetCtx.getComplexTypes().stream().filter(_function_4).findFirst();
               if ((appService.isPresent() && (!accessorService.isPresent()))) {
                 ComplexType _get = appService.get();
                 final DataStructure newAccessorService = this.mapApplicationServiceToAccessor(((DataStructure) _get));
-                this.context.getComplexTypes().add(newAccessorService);
+                this.targetCtx.getComplexTypes().add(newAccessorService);
               }
             }
           }
@@ -147,16 +130,17 @@ public class OpenHostServiceDownstreamGenerator {
    * Filter the relations where {@link Context} is the downstream of a OHS relation. The {@link Context} must have the same name
    * as the {@link BoundedContext} in the relation in order to map them.
    */
-  private List<Relationship> filterDownstreamRelationships() {
+  @Override
+  public List<Relationship> filter() {
     final Predicate<Relationship> _function = (Relationship rel) -> {
       return (rel instanceof UpstreamDownstreamRelationship);
     };
     final Predicate<Relationship> _function_1 = (Relationship rel) -> {
-      return ((UpstreamDownstreamRelationship) rel).getDownstream().getName().equals(this.context.getName());
+      return ((UpstreamDownstreamRelationship) rel).getDownstream().getName().equals(this.targetCtx.getName());
     };
     final Predicate<Relationship> _function_2 = (Relationship rel) -> {
       return ((UpstreamDownstreamRelationship) rel).getUpstreamRoles().contains(UpstreamRole.OPEN_HOST_SERVICE);
     };
-    return this.map.getRelationships().stream().filter(_function).filter(_function_1).filter(_function_2).collect(Collectors.<Relationship>toList());
+    return this.inputMap.getRelationships().stream().filter(_function).filter(_function_1).filter(_function_2).collect(Collectors.<Relationship>toList());
   }
 }

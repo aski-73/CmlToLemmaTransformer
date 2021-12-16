@@ -16,7 +16,6 @@ import de.fhdo.lemma.data.PrimitiveType
 import java.util.List
 import org.contextmapper.dsl.contextMappingDSL.Aggregate
 import org.contextmapper.dsl.contextMappingDSL.BoundedContext
-import org.contextmapper.dsl.contextMappingDSL.ContextMappingModel
 import org.contextmapper.tactic.dsl.tacticdsl.Attribute
 import org.contextmapper.tactic.dsl.tacticdsl.CollectionType
 import org.contextmapper.tactic.dsl.tacticdsl.DomainObject
@@ -28,16 +27,13 @@ import org.contextmapper.tactic.dsl.tacticdsl.Service
 import org.contextmapper.tactic.dsl.tacticdsl.ServiceOperation
 import org.contextmapper.tactic.dsl.tacticdsl.SimpleDomainObject
 import org.contextmapper.tactic.dsl.tacticdsl.ValueObject
-import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceDownstreamGenerator
-import de.fhdo.lemma.cml_transformer.factory.context_map.AnticorruptionLayerGenerator
 import org.eclipse.xtend.lib.annotations.Accessors
-import de.fhdo.lemma.cml_transformer.factory.context_map.ConformistGenerator
 import org.eclipse.emf.ecore.util.EcoreUtil
 
 /**
  * Model transformation from ContextMapper DSL (CML) to LEMMA Domain Data Modeling Language (DML)
  */
-class LemmaDomainDataModelFactory {
+class DomainDataModelFactory {
 	static val DATA_FACTORY = DataFactory.eINSTANCE
 	
 	/**
@@ -49,34 +45,21 @@ class LemmaDomainDataModelFactory {
 	 * Static variant of the method {@link LemmaDomainDataModelFactory#mapAggregate2ComplexType} in order
 	 * to map a single CML {@link Aggregate}.
 	 */
-	static def List<ComplexType> mapAggregate2ComplexType(ContextMappingModel cmlModel, Aggregate agg) {
-		val dataModelFactory = new LemmaDomainDataModelFactory(cmlModel)
+	static def List<ComplexType> mapAggregate2ComplexType(Aggregate agg) {
+		val dataModelFactory = new DomainDataModelFactory()
 		dataModelFactory.dataModel = DATA_FACTORY.createDataModel
 		// contains all extracted Entities and Value Objects of an CML Aggregate
 		val dataStructures = <ComplexType>newLinkedList
 		val ctx = DATA_FACTORY.createContext
 		
-
-		// A CML Aggregate contains Entities, Value Objects and Domain Services
-		for (obj : agg.domainObjects) {
-			val lemmaStructure = dataModelFactory.mapSimpleDomainObject2ComplexType(obj, ctx)
-
-			dataStructures.add(lemmaStructure)
-		}
-
-		// Creating domain services
-		for (service : agg.services) {
-			val lemmaDomainService = dataModelFactory.mapServiceToComplexType(service, true, ctx)
-			dataStructures.add(lemmaDomainService)
-		}
+		// add DataStructures
+		dataStructures.addAll(dataModelFactory.mapAggregate2ComplexType(agg, ctx))
+	
+		// add LEMMA ListTypes that might have be created during previous mapping
+		dataStructures.addAll(dataModelFactory.listsToGenerate)
 
 		return dataStructures
 	}
-
-	/**
-	 * Input Model (CML)
-	 */
-	ContextMappingModel cmlModel;
 
 	/**
 	 * Output Model (LEMMA DML)
@@ -89,17 +72,13 @@ class LemmaDomainDataModelFactory {
 	 * {@link ListType}s are not put directly into the List of {@link ComplexType}s of a {@link Context} in order to make
 	 * a check for already created {@link ListType}s easier and faster.
 	 */
-	@Accessors(PUBLIC_GETTER) List<ListType> listsToGenerate = newLinkedList;
-
-	new(ContextMappingModel cmlModel) {
-		this.cmlModel = cmlModel
-	}
+	public final List<ListType> listsToGenerate = newLinkedList;
 
 	/**
 	 * Maps CML Model {@link BoundedContext} to LEMMA DML Model {@link DataModel}. The latter containing one {@link Context}
 	 */
 	def DataModel generateDataModel(BoundedContext bc) {
-		listsToGenerate = newLinkedList
+		listsToGenerate.clear()
 		dataModel = DATA_FACTORY.createDataModel
 
 		val ctx = mapBoundedContext2Context(bc);
@@ -152,14 +131,13 @@ class LemmaDomainDataModelFactory {
 	 * @param agg CML {@link Aggregate} to map
 	 * @param ctx LEMMA {@link Context} which is needed for already checked domain objects
 	 */
-	private def List<ComplexType> mapAggregate2ComplexType(Aggregate agg, Context ctx) {
+	package def List<ComplexType> mapAggregate2ComplexType(Aggregate agg, Context ctx) {
 		// contains all extracted Entities and Value Objects of an CML Aggregate
 		val dataStructures = <ComplexType>newLinkedList
 
 		// A CML Aggregate contains Entities, Value Objects and Repositories
 		for (obj : agg.domainObjects) {
 			val lemmaStructure = mapSimpleDomainObject2ComplexType(obj, ctx)
-
 			dataStructures.add(lemmaStructure)
 		}
 

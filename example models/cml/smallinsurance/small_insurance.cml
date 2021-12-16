@@ -85,6 +85,7 @@ BoundedContext CustomerManagementContext {
             int id key
             String firstname
             String lastname
+            - Document docFromPrintingContext
             - List<Address> addresses
         }
         ValueObject Address {
@@ -114,14 +115,14 @@ BoundedContext PolicyManagementContext {
     type = FEATURE
     Aggregate Contract {
         Service ContractService {
-            // Als Conformist kennt PolicyManagement "Customer"
-            // In LEMMA erhält dieser eine Kopie von Customer
-            void createContract(List<int> productIds, int customerId);
+           void createContract(List<int> productIds, int customerId);
         }
         Entity Contract {
             aggregateRoot
             int id key
             - List<Product> products
+            // Als Conformist kennt PolicyManagement "Customer"
+            // In LEMMA erhält dieser eine Kopie von Customer
             - Customer client
         }
         Entity Product {

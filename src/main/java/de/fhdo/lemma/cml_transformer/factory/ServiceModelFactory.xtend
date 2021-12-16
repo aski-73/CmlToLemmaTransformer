@@ -19,7 +19,7 @@ import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceUpstream
  * 
  * Depending on the relations in the {@link ContextMap} further steps will be made.
  */
-class LemmaServiceModelFactory {
+class ServiceModelFactory {
 	static val SERVICE_FACTORY = ServiceFactory.eINSTANCE
 
 	/**
@@ -52,27 +52,17 @@ class LemmaServiceModelFactory {
 	/**
 	 * Input Model (CML)
 	 */
-	ContextMappingModel cmlModel
+	ContextMappingModel inputCml
 
 	/**
 	 * Input Model
 	 */
-	Context context
+	Context inputCtx
 
-	/** 
-	 * Output Model (SML)
-	 */
-	ServiceModel serviceModel
 
-	/**
-	 * Created {@link Technology}s will be put in here
-	 */
-	List<Technology> technologies
-
-	new(ContextMappingModel cmlModel, Context context, List<Technology> technologies) {
-		this.cmlModel = cmlModel
-		this.context = context
-		this.technologies = technologies
+	new(ContextMappingModel cmlModel, Context context) {
+		this.inputCml = cmlModel
+		this.inputCtx = context
 	}
 
 	/**
@@ -83,29 +73,24 @@ class LemmaServiceModelFactory {
 	 * @param serviceModelPath	  Path containing all created Service Models (.services files)
 	 * @param technologyModelPath Path containing all created Technology Models (.technology files)
 	 */
-	def ServiceModel buildServiceModel(String dataModelPath, String serviceModelPath, String technologyModelPath) {
-		this.serviceModel = SERVICE_FACTORY.createServiceModel
+	def ServiceModel generateServiceModel(String dataModelPath, String serviceModelPath, String technologyModelPath) {
+		val serviceModel = SERVICE_FACTORY.createServiceModel
 
-		val boundedContext = this.cmlModel.boundedContexts.stream.filter [ bc |
-			bc.name.equals(this.context.name)
+		val boundedContext = this.inputCml.boundedContexts.stream.filter [ bc |
+			bc.name.equals(this.inputCtx.name)
 		].findAny()
 
 		if (boundedContext.isPresent) {
 			// create Microservice
 			val microservice = SERVICE_FACTORY.createMicroservice
-			microservice.name = "org.my_organization." + this.context.name
+			microservice.name = "org.my_organization." + this.inputCtx.name
 			microservice.qualifiedNameParts.addAll(#["org", "my_organization"]) // TODO wird das vom Extractor genutzt ? denke nicht
 			microservice.visibility = mapBoundedContextTypeToServiceVisibility(boundedContext.get.type)
 			microservice.type = mapBoundedContextTypeToServiceType(boundedContext.get.type)
 
-			// use OHS Upstream Generator to fill the microservice
-			val ohsUpstreamGenerator = new OpenHostServiceUpstreamGenerator(this.context, this.serviceModel,
-				microservice, cmlModel.map, dataModelPath, technologyModelPath, this.technologies)
-			ohsUpstreamGenerator.mapOhsUpstream()
-
-			this.serviceModel.microservices.add(microservice)
+			serviceModel.microservices.add(microservice)
 		}
 
-		return this.serviceModel
+		return serviceModel
 	}
 }

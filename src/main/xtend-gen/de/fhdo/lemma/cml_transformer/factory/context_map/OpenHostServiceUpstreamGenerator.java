@@ -1,7 +1,7 @@
 package de.fhdo.lemma.cml_transformer.factory.context_map;
 
 import de.fhdo.lemma.cml_transformer.Util;
-import de.fhdo.lemma.cml_transformer.factory.LemmaTechnologyModelFactory;
+import de.fhdo.lemma.cml_transformer.factory.TechnologyModelFactory;
 import de.fhdo.lemma.data.ComplexType;
 import de.fhdo.lemma.data.Context;
 import de.fhdo.lemma.data.DataModel;
@@ -50,13 +50,8 @@ import org.eclipse.xtext.xbase.lib.Pair;
  * If such an {@link ApplicationService} is not defined nothing will be done.
  */
 @SuppressWarnings("all")
-public class OpenHostServiceUpstreamGenerator {
+public class OpenHostServiceUpstreamGenerator extends AbstractRelationshipGenerator {
   private static final ServiceFactory SERVICE_FACTORY = ServiceFactory.eINSTANCE;
-  
-  /**
-   * Mapped LEMMA DML {@link Context} for which a Microservice will be generated
-   */
-  private Context context;
   
   /**
    * List of LEMMA {@link Technology}-Model. Newly created technologies that are identified
@@ -74,23 +69,16 @@ public class OpenHostServiceUpstreamGenerator {
    */
   private Microservice service;
   
-  /**
-   * Context Map of the CML Model which contains  OHS-relations of the LEMMA DML {@link Context}. The {@link Context} must have the same name
-   * as the {@link BoundedContext} in the Context Map in order to map them.
-   */
-  private ContextMap map;
-  
   private String domainDataModelPath;
   
   private String technologyModelPath;
   
-  private final LemmaTechnologyModelFactory techFactory = new LemmaTechnologyModelFactory();
+  private final TechnologyModelFactory techFactory = new TechnologyModelFactory();
   
   public OpenHostServiceUpstreamGenerator(final Context context, final ServiceModel serviceModel, final Microservice service, final ContextMap map, final String domainDataModelPath, final String technologyModelPath, final List<Technology> technologies) {
-    this.context = context;
+    super(context, map, CollectionLiterals.<DataModel>newLinkedList());
     this.serviceModel = serviceModel;
     this.service = service;
-    this.map = map;
     this.domainDataModelPath = domainDataModelPath;
     this.technologyModelPath = technologyModelPath;
     this.technologies = technologies;
@@ -102,8 +90,9 @@ public class OpenHostServiceUpstreamGenerator {
    * The Application Service must follow the naming rule "ExposedAggregateName"+"Api".
    * The service {@link Interface} will have equivalent operations like the Application Service of the {@link DataModel}
    */
-  public void mapOhsUpstream() {
-    final List<Relationship> rr = this.filterUpstreamRelationships();
+  @Override
+  public void map() {
+    final List<Relationship> rr = this.filter();
     int _size = rr.size();
     boolean _equals = (_size == 0);
     if (_equals) {
@@ -117,10 +106,10 @@ public class OpenHostServiceUpstreamGenerator {
           String _plus = (_name_1 + "Api");
           return _name.equals(_plus);
         };
-        final Optional<ComplexType> appService = this.context.getComplexTypes().stream().filter(_function_1).findFirst();
+        final Optional<ComplexType> appService = this.targetCtx.getComplexTypes().stream().filter(_function_1).findFirst();
         boolean _isPresent = appService.isPresent();
         if (_isPresent) {
-          final Technology technology = this.techFactory.mapImplementationTechnologyToTechnologymodel(rel.getImplementationTechnology());
+          final Technology technology = this.techFactory.generateTechnologymodel(rel.getImplementationTechnology());
           ComplexType _get = appService.get();
           final Pair<Interface, List<Import>> interfaceImportPair = this.mapApplicationServiceToServiceInterface(((DataStructure) _get), technology);
           this.service.getInterfaces().add(interfaceImportPair.getKey());
@@ -137,6 +126,7 @@ public class OpenHostServiceUpstreamGenerator {
   }
   
   /**
+   * TODO Must also use the CML Application Service in order to get the visibilty of the operations
    * Maps a LEMMA Application Service to a LEMMA SML {@link Interface}
    * See sml/metamodel-interfaces-operations.uxf and sml/metamodel-endpoints.uxf for reference
    * 
@@ -282,16 +272,17 @@ public class OpenHostServiceUpstreamGenerator {
    * Filter the relations where {@link Context} is the upstream of a OHS relation. The {@link Context} must have the same name
    * as the {@link BoundedContext} in the relation in order to map them.
    */
-  private List<Relationship> filterUpstreamRelationships() {
+  @Override
+  public List<Relationship> filter() {
     final Predicate<Relationship> _function = (Relationship rel) -> {
       return (rel instanceof UpstreamDownstreamRelationship);
     };
     final Predicate<Relationship> _function_1 = (Relationship rel) -> {
-      return ((UpstreamDownstreamRelationship) rel).getUpstream().getName().equals(this.context.getName());
+      return ((UpstreamDownstreamRelationship) rel).getUpstream().getName().equals(this.targetCtx.getName());
     };
     final Predicate<Relationship> _function_2 = (Relationship rel) -> {
       return ((UpstreamDownstreamRelationship) rel).getUpstreamRoles().contains(UpstreamRole.OPEN_HOST_SERVICE);
     };
-    return this.map.getRelationships().stream().filter(_function).filter(_function_1).filter(_function_2).collect(Collectors.<Relationship>toList());
+    return this.inputMap.getRelationships().stream().filter(_function).filter(_function_1).filter(_function_2).collect(Collectors.<Relationship>toList());
   }
 }

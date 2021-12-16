@@ -1,7 +1,6 @@
 package de.fhdo.lemma.cml_transformer.factory.context_map
 
 import de.fhdo.lemma.cml_transformer.Util
-import de.fhdo.lemma.cml_transformer.factory.LemmaTechnologyModelFactory
 import de.fhdo.lemma.data.ComplexType
 import de.fhdo.lemma.data.Context
 import de.fhdo.lemma.data.DataModel
@@ -24,6 +23,7 @@ import org.contextmapper.dsl.contextMappingDSL.ContextMap
 import org.contextmapper.dsl.contextMappingDSL.UpstreamDownstreamRelationship
 import org.contextmapper.dsl.contextMappingDSL.UpstreamRole
 import org.eclipse.emf.ecore.util.EcoreUtil
+import de.fhdo.lemma.cml_transformer.factory.TechnologyModelFactory
 
 /**
  * Upstream implementation of an OHS
@@ -32,13 +32,8 @@ import org.eclipse.emf.ecore.util.EcoreUtil
  * The {@link ApplicationService} must follow the naming rule "ExposedAggregate"+"API".
  * If such an {@link ApplicationService} is not defined nothing will be done.
  */
-class OpenHostServiceUpstreamGenerator {
+class OpenHostServiceUpstreamGenerator extends AbstractRelationshipGenerator {
 	static val SERVICE_FACTORY = ServiceFactory.eINSTANCE
-	
-	/**
-	 * Mapped LEMMA DML {@link Context} for which a Microservice will be generated
-	 */
-	Context context
 	
 	/**
 	 * List of LEMMA {@link Technology}-Model. Newly created technologies that are identified
@@ -56,17 +51,11 @@ class OpenHostServiceUpstreamGenerator {
 	 */
 	Microservice service
 
-	/**
-	 * Context Map of the CML Model which contains  OHS-relations of the LEMMA DML {@link Context}. The {@link Context} must have the same name
-	 * as the {@link BoundedContext} in the Context Map in order to map them.
-	 */
-	ContextMap map
-
 	String domainDataModelPath
 
 	String technologyModelPath
 
-	val techFactory = new LemmaTechnologyModelFactory()
+	val techFactory = new TechnologyModelFactory()
 
 	new(
 		Context context,
@@ -77,10 +66,10 @@ class OpenHostServiceUpstreamGenerator {
 		String technologyModelPath,
 		List<Technology> technologies
 	) {
-		this.context = context
+		// provide empty list instead of already instantiated data models since this class does need them
+		super(context, map, newLinkedList)
 		this.serviceModel = serviceModel
 		this.service = service
-		this.map = map
 		this.domainDataModelPath = domainDataModelPath
 		this.technologyModelPath = technologyModelPath
 		this.technologies = technologies
@@ -92,9 +81,9 @@ class OpenHostServiceUpstreamGenerator {
 	 * The Application Service must follow the naming rule "ExposedAggregateName"+"Api".
 	 * The service {@link Interface} will have equivalent operations like the Application Service of the {@link DataModel}
 	 */
-	def mapOhsUpstream() {
+	override map() {
 		// Relationships in which the Context is the Upstream of an OHS relation
-		val rr = filterUpstreamRelationships()
+		val rr = filter()
 		if (rr.size == 0) {
 			return
 		}
@@ -105,7 +94,7 @@ class OpenHostServiceUpstreamGenerator {
 
 			(rel as UpstreamDownstreamRelationship).upstreamExposedAggregates.stream.forEach [ agg |
 				// Look up the Application Service in the LEMMA Context that exposes the exposed aggregate 
-				val appService = this.context.complexTypes.stream.filter([ cType |
+				val appService = this.targetCtx.complexTypes.stream.filter([ cType |
 					cType.name.equals(agg.name + "Api")
 				]).findFirst()
 
@@ -113,12 +102,13 @@ class OpenHostServiceUpstreamGenerator {
 					// Create an service interface for the application service. The interface and its operation
 					// use a technology that its mapped by the CML keyword "implementationTechnology"
 					val technology = techFactory.
-						mapImplementationTechnologyToTechnologymodel(rel.implementationTechnology)
+						generateTechnologymodel(rel.implementationTechnology)
 					val interfaceImportPair = mapApplicationServiceToServiceInterface(appService.get as DataStructure,
 						technology)
 
 					// Put the created interface in the service model
 					this.service.interfaces.add(interfaceImportPair.key)
+					// Add technology annotation by adding the import. And add import in general
 					this.serviceModel.imports.addAll(interfaceImportPair.value)
 					
 					if (!Util.technologyExists(this.technologies, technology)) {
@@ -131,6 +121,7 @@ class OpenHostServiceUpstreamGenerator {
 	}
 
 	/**
+	 * TODO Must also use the CML Application Service in order to get the visibilty of the operations
 	 * Maps a LEMMA Application Service to a LEMMA SML {@link Interface}
 	 * See sml/metamodel-interfaces-operations.uxf and sml/metamodel-endpoints.uxf for reference
 	 * 
@@ -273,9 +264,9 @@ class OpenHostServiceUpstreamGenerator {
 	 * Filter the relations where {@link Context} is the upstream of a OHS relation. The {@link Context} must have the same name
 	 * as the {@link BoundedContext} in the relation in order to map them.
 	 */
-	private def filterUpstreamRelationships() {
-		return map.relationships.stream.filter([rel|rel instanceof UpstreamDownstreamRelationship]).filter([ rel |
-			(rel as UpstreamDownstreamRelationship).upstream.name.equals(context.name)
+	override filter() {
+		return inputMap.relationships.stream.filter([rel|rel instanceof UpstreamDownstreamRelationship]).filter([ rel |
+			(rel as UpstreamDownstreamRelationship).upstream.name.equals(targetCtx.name)
 		]).filter([ rel |
 			(rel as UpstreamDownstreamRelationship).upstreamRoles.contains(UpstreamRole.OPEN_HOST_SERVICE)
 		]).collect(Collectors.toList())

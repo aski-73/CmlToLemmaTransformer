@@ -15,7 +15,7 @@ import org.eclipse.xtext.xbase.lib.CollectionLiterals;
  * Mapping CML "implementationTechnology" to LEMMA Technology Model
  */
 @SuppressWarnings("all")
-public class LemmaTechnologyModelFactory {
+public class TechnologyModelFactory {
   private static final TechnologyFactory TECHNOLOGY_FACTORY = TechnologyFactory.eINSTANCE;
   
   /**
@@ -29,20 +29,20 @@ public class LemmaTechnologyModelFactory {
   
   private final ServiceAspect deleteAspect;
   
-  public LemmaTechnologyModelFactory() {
-    this.postAspect = LemmaTechnologyModelFactory.TECHNOLOGY_FACTORY.createServiceAspect();
+  public TechnologyModelFactory() {
+    this.postAspect = TechnologyModelFactory.TECHNOLOGY_FACTORY.createServiceAspect();
     this.postAspect.setName("POST");
     this.postAspect.getFeatures().add(AspectFeature.SINGLE_VALUED);
     this.postAspect.getJoinPoints().add(JoinPointType.OPERATIONS);
-    this.getAspect = LemmaTechnologyModelFactory.TECHNOLOGY_FACTORY.createServiceAspect();
+    this.getAspect = TechnologyModelFactory.TECHNOLOGY_FACTORY.createServiceAspect();
     this.getAspect.setName("GET");
     this.getAspect.getFeatures().add(AspectFeature.SINGLE_VALUED);
     this.getAspect.getJoinPoints().add(JoinPointType.OPERATIONS);
-    this.putAspect = LemmaTechnologyModelFactory.TECHNOLOGY_FACTORY.createServiceAspect();
+    this.putAspect = TechnologyModelFactory.TECHNOLOGY_FACTORY.createServiceAspect();
     this.putAspect.setName("PUT");
     this.putAspect.getFeatures().add(AspectFeature.SINGLE_VALUED);
     this.putAspect.getJoinPoints().add(JoinPointType.OPERATIONS);
-    this.deleteAspect = LemmaTechnologyModelFactory.TECHNOLOGY_FACTORY.createServiceAspect();
+    this.deleteAspect = TechnologyModelFactory.TECHNOLOGY_FACTORY.createServiceAspect();
     this.deleteAspect.setName("DELETE");
     this.deleteAspect.getFeatures().add(AspectFeature.SINGLE_VALUED);
     this.deleteAspect.getJoinPoints().add(JoinPointType.OPERATIONS);
@@ -81,7 +81,7 @@ public class LemmaTechnologyModelFactory {
   /**
    * Maps CML implementationTechnology Keyword to specific LEMMA Technologies
    */
-  public Technology mapImplementationTechnologyToTechnologymodel(final String implementationTechnology) {
+  public Technology generateTechnologymodel(final String implementationTechnology) {
     if (((implementationTechnology != null) && implementationTechnology.equals("RESTfulHttp"))) {
       return this.createRestTechnology();
     } else {
@@ -94,12 +94,12 @@ public class LemmaTechnologyModelFactory {
    * a protocol. Its an architecture style. But for simplicity its treated as a protocol.
    */
   private Technology createRestTechnology() {
-    final Technology restTech = LemmaTechnologyModelFactory.TECHNOLOGY_FACTORY.createTechnology();
+    final Technology restTech = TechnologyModelFactory.TECHNOLOGY_FACTORY.createTechnology();
     restTech.setName("Rest");
-    final Protocol restProtocol = LemmaTechnologyModelFactory.TECHNOLOGY_FACTORY.createProtocol();
+    final Protocol restProtocol = TechnologyModelFactory.TECHNOLOGY_FACTORY.createProtocol();
     restProtocol.setName("rest");
     restProtocol.setCommunicationType(CommunicationType.SYNCHRONOUS);
-    final DataFormat dataFormat = LemmaTechnologyModelFactory.TECHNOLOGY_FACTORY.createDataFormat();
+    final DataFormat dataFormat = TechnologyModelFactory.TECHNOLOGY_FACTORY.createDataFormat();
     dataFormat.setFormatName("application/json");
     restProtocol.getDataFormats().add(dataFormat);
     restTech.getProtocols().add(restProtocol);

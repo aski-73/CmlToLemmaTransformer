@@ -3,15 +3,17 @@ package de.fhdo.lemma.cml_transformer;
 import de.fhdo.lemma.cml_transformer.code_generators.DataDslExtractor;
 import de.fhdo.lemma.cml_transformer.code_generators.ServiceDslExtractor;
 import de.fhdo.lemma.cml_transformer.code_generators.TechnologyDslExtractor;
-import de.fhdo.lemma.cml_transformer.factory.LemmaDomainDataModelFactory;
-import de.fhdo.lemma.cml_transformer.factory.LemmaServiceModelFactory;
+import de.fhdo.lemma.cml_transformer.factory.DomainDataModelFactory;
+import de.fhdo.lemma.cml_transformer.factory.ServiceModelFactory;
 import de.fhdo.lemma.cml_transformer.factory.context_map.AnticorruptionLayerGenerator;
 import de.fhdo.lemma.cml_transformer.factory.context_map.ConformistGenerator;
 import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceDownstreamGenerator;
+import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceUpstreamGenerator;
 import de.fhdo.lemma.data.Context;
 import de.fhdo.lemma.data.DataModel;
 import de.fhdo.lemma.model_processing.annotations.CodeGenerationModule;
 import de.fhdo.lemma.model_processing.builtin_phases.code_generation.AbstractCodeGenerationModule;
+import de.fhdo.lemma.service.Microservice;
 import de.fhdo.lemma.service.ServiceModel;
 import de.fhdo.lemma.technology.Technology;
 import java.io.File;
@@ -39,7 +41,7 @@ import org.jetbrains.annotations.NotNull;
  */
 @CodeGenerationModule(name = "main")
 @SuppressWarnings("all")
-public class CmlCodeGenerationModule extends AbstractCodeGenerationModule {
+public class LemmaCodeGenerationModule extends AbstractCodeGenerationModule {
   /**
    * Return the namespace of the modeling language, from whose models code can be
    * generated
@@ -90,7 +92,7 @@ public class CmlCodeGenerationModule extends AbstractCodeGenerationModule {
     EList<BoundedContext> _boundedContexts = cmlModel.getBoundedContexts();
     for (final BoundedContext bc : _boundedContexts) {
       {
-        final LemmaDomainDataModelFactory factory = new LemmaDomainDataModelFactory(cmlModel);
+        final DomainDataModelFactory factory = new DomainDataModelFactory();
         final DataModel dataModel = factory.generateDataModel(bc);
         dataModels.add(dataModel);
       }
@@ -99,18 +101,21 @@ public class CmlCodeGenerationModule extends AbstractCodeGenerationModule {
       {
         final Context ctx = dataModel.getContexts().get(0);
         ContextMap _map = cmlModel.getMap();
-        final OpenHostServiceDownstreamGenerator ohsGenerator = new OpenHostServiceDownstreamGenerator(ctx, dataModels, _map);
-        ohsGenerator.mapOhsDownstream();
-        final LinkedList<String> errors = CollectionLiterals.<String>newLinkedList();
+        final OpenHostServiceDownstreamGenerator ohsGenerator = new OpenHostServiceDownstreamGenerator(ctx, _map, dataModels);
+        ohsGenerator.map();
         ContextMap _map_1 = cmlModel.getMap();
-        final AnticorruptionLayerGenerator aclGenerator = new AnticorruptionLayerGenerator(ctx, dataModels, _map_1, errors);
-        aclGenerator.mapAcl();
-        LemmaDomainDataModelFactory _lemmaDomainDataModelFactory = new LemmaDomainDataModelFactory(cmlModel);
-        final ConformistGenerator cofGenerator = new ConformistGenerator(ctx, cmlModel, _lemmaDomainDataModelFactory);
-        cofGenerator.mapCof();
+        final AnticorruptionLayerGenerator aclGenerator = new AnticorruptionLayerGenerator(ctx, _map_1, dataModels);
+        aclGenerator.map();
+        ContextMap _map_2 = cmlModel.getMap();
+        final ConformistGenerator cofGenerator = new ConformistGenerator(ctx, _map_2);
+        cofGenerator.map();
         Context _copy = EcoreUtil.<Context>copy(ctx);
-        final LemmaServiceModelFactory serviceModelFactory = new LemmaServiceModelFactory(cmlModel, _copy, technologies);
-        final ServiceModel serviceModel = serviceModelFactory.buildServiceModel(dataModelPath, serviceModelPath, technologyModelPath);
+        final ServiceModelFactory serviceModelFactory = new ServiceModelFactory(cmlModel, _copy);
+        final ServiceModel serviceModel = serviceModelFactory.generateServiceModel(dataModelPath, serviceModelPath, technologyModelPath);
+        Microservice _get_1 = serviceModel.getMicroservices().get(0);
+        ContextMap _map_3 = cmlModel.getMap();
+        final OpenHostServiceUpstreamGenerator ohsUpstreamGenerator = new OpenHostServiceUpstreamGenerator(ctx, serviceModel, _get_1, _map_3, dataModelPath, technologyModelPath, technologies);
+        ohsUpstreamGenerator.map();
         final DataDslExtractor dataExtractor = new DataDslExtractor();
         System.out.println(dataExtractor.extractToString(dataModel));
         StringConcatenation _builder_3 = new StringConcatenation();
