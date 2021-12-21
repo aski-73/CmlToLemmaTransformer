@@ -39,7 +39,7 @@ public class ConformistGenerator extends AbstractRelationshipGenerator {
     }
     final Consumer<Relationship> _function = (Relationship rel) -> {
       final Consumer<Aggregate> _function_1 = (Aggregate agg) -> {
-        final List<ComplexType> cTypes = DomainDataModelFactory.mapAggregate2ComplexType(agg);
+        final List<ComplexType> cTypes = DomainDataModelFactory.mapAggregateToComplexType(agg);
         for (final ComplexType cType : cTypes) {
           {
             final Predicate<ComplexType> _function_2 = (ComplexType checkMe) -> {

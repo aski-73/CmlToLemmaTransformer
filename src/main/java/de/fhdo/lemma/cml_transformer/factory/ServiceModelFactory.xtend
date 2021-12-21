@@ -28,7 +28,7 @@ class ServiceModelFactory {
 	def static mapBoundedContextTypeToServiceType(BoundedContextType type) {
 		return switch (type) {
 			case BoundedContextType.APPLICATION: MicroserviceType.FUNCTIONAL
-			case BoundedContextType.TEAM: MicroserviceType.FUNCTIONAL
+			case BoundedContextType.TEAM: null
 			case BoundedContextType.FEATURE: MicroserviceType.FUNCTIONAL
 			case BoundedContextType.SYSTEM: MicroserviceType.INFRASTRUCTURE
 			default: MicroserviceType.FUNCTIONAL

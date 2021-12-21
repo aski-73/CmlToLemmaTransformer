@@ -1,0 +1,85 @@
+<diagram program="umletino" version="14.4.0-SNAPSHOT"><zoom_level>10</zoom_level><element><id>UMLClass</id><coordinates><x>520</x><y>110</y><w>250</w><h>50</h></coordinates><panel_attributes>/*ComplexType*/
+--
+features : ComplexTypeFeature[*]</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>470</x><y>170</y><w>120</w><h>30</h></coordinates><panel_attributes>*Enumeration*</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>210</x><y>170</y><w>170</w><h>80</h></coordinates><panel_attributes>*EnumerationField*
+--
+name : String
+initializationValue
+  : PrimitiveValue[0..1]</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>370</x><y>170</y><w>120</w><h>40</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+m2=1..*
+m1=1</panel_attributes><additional_attributes>100;10;10;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>710</x><y>170</y><w>260</w><h>50</h></coordinates><panel_attributes>*ListType*
+--
+primitiveType : PrimitiveType[0..1]</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>580</x><y>150</y><w>50</w><h>60</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>30;10;30;40;10;40</additional_attributes></element><element><id>Relation</id><coordinates><x>680</x><y>150</y><w>50</w><h>60</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>10;10;10;40;30;40</additional_attributes></element><element><id>Relation</id><coordinates><x>640</x><y>150</y><w>30</w><h>100</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>10;10;10;80</additional_attributes></element><element><id>Relation</id><coordinates><x>400</x><y>220</y><w>70</w><h>70</h></coordinates><panel_attributes>lt=&lt;-
+r1=super
+m1=   0..1</panel_attributes><additional_attributes>50;20;30;20;30;50;50;50</additional_attributes></element><element><id>UMLClass</id><coordinates><x>450</x><y>230</y><w>400</w><h>80</h></coordinates><panel_attributes>*DataStructure*
+--
+/effectiveFields : DataField[*]
+/effectiveOperations : DataOperation[*]
+--
+isExtensionOf(otherStructure : DataStructure) : Boolean</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>630</x><y>300</y><w>70</w><h>90</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+m2=*
+m1=0..1</panel_attributes><additional_attributes>10;10;10;60;50;60</additional_attributes></element><element><id>Relation</id><coordinates><x>890</x><y>210</y><w>50</w><h>140</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+m2=*
+m1=0..1</panel_attributes><additional_attributes>10;10;10;120</additional_attributes></element><element><id>UMLClass</id><coordinates><x>680</x><y>330</y><w>290</w><h>210</h></coordinates><panel_attributes>*DataField*
+--
+name : String
+hidden : Boolean
+immutable : Boolean
+complexType : ComplexType[0..1]
+importedComplexType
+  : ImportedComplexType[0..1]
+primitiveType : PrimitiveType[0..1]
+initializationValue : PrimitiveValue[0..1]
+features : DataFieldFeature[*]
+/effectiveType : Type
+--
+findEponymousSuperField() : DataField</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>380</x><y>290</y><w>90</w><h>60</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+m2=*
+m1=1</panel_attributes><additional_attributes>70;10;10;10;10;40</additional_attributes></element><element><id>UMLClass</id><coordinates><x>210</x><y>330</y><w>360</w><h>210</h></coordinates><panel_attributes>*DataOperation*
+--
+name : String
+hidden : Boolean
+hasNoReturnType : Boolean
+features : DataOperationFeature[*]
+complexReturnType : ComplexType[0..1]
+importedComplexReturnType
+  : ImportedComplexType[0..1]
+primitiveReturnType : PrimitiveType[0..1]
+/inherited : Boolean
+/primitiveOrComplexReturnType : Type
+--
+findEponymousSuperOperation() : DataOperation</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>250</x><y>610</y><w>270</w><h>130</h></coordinates><panel_attributes>*DataOperationParameter*
+--
+name : String
+complexType : ComplexType[0..1]
+importedComplexType
+  : ImportedComplexType[0..1]
+primitiveType : PrimitiveType[0..1]
+/effectiveType : Type</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>370</x><y>530</y><w>40</w><h>100</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+m2=*
+m1=1</panel_attributes><additional_attributes>10;10;10;80</additional_attributes></element><element><id>UMLClass</id><coordinates><x>550</x><y>550</y><w>210</w><h>230</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
+*ComplexTypeFeature*
+--
+AGGREGATE
+APPLICATION_SERVICE
+DOMAIN_EVENT
+DOMAIN_SERVICE
+ENTITY
+FACTORY
+INFRASTRUCTURE_SERVICE
+REPOSITORY
+SERVICE
+SPECIFICATION
+VALUE_OBJECT</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>770</x><y>670</y><w>200</w><h>110</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
+*DataOperationFeature*
+--
+CLOSURE
+IDENTIFIER
+SIDE_EFFECT_FREE
+VALIDATOR</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>770</x><y>550</y><w>200</w><h>100</h></coordinates><panel_attributes>&lt;&lt;enumeration&gt;&gt;
+*DataFieldFeature*
+--
+IDENTIFIER
+NEVER_EMPTY
+PART</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>810</x><y>110</y><w>50</w><h>30</h></coordinates><panel_attributes>/*Type*/</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>760</x><y>110</y><w>70</w><h>30</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>50;10;10;10</additional_attributes></element><element><id>UMLFrame</id><coordinates><x>200</x><y>100</y><w>780</w><h>690</h></coordinates><panel_attributes>*mm*
+Domain Data Modeling Language
+(namespace: DomainData)</panel_attributes><additional_attributes></additional_attributes></element></diagram>

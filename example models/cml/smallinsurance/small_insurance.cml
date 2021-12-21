@@ -87,6 +87,14 @@ BoundedContext CustomerManagementContext {
             String lastname
             - Document docFromPrintingContext
             - List<Address> addresses
+            Repository CustomerRepository {
+            	void saveCustomer(@Customer c);
+            	void deleteCustomer(int id);
+            }
+        }
+        DomainEvent CustomerCreated {
+        	int customerId
+        	Date creationTime
         }
         ValueObject Address {
             String street

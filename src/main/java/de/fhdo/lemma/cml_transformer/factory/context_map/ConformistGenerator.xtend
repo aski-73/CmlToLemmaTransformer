@@ -34,7 +34,7 @@ class ConformistGenerator extends AbstractRelationshipGenerator {
 			// by using the LEMMADomainDataModelFactory. The factory creates new instances of DataStructures 
 			// and also tells which ListTypes are used.
 			(rel as UpstreamDownstreamRelationship).upstreamExposedAggregates.stream.forEach([ agg |
-				val cTypes = DomainDataModelFactory.mapAggregate2ComplexType(agg)
+				val cTypes = DomainDataModelFactory.mapAggregateToComplexType(agg)
 				// Only add complex types which are not already existing. A (domain object or) list type of the upstream might already
 				// exist in the target context because in CML it's possible to reference domain objects (which can contain list types) from other bounded contexts
 				// and the DomainDataModelFactory would already create it in the target context. But this behavior is not wanted because one 

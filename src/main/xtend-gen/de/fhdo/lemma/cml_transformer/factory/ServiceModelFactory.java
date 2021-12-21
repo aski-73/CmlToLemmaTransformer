@@ -37,7 +37,7 @@ public class ServiceModelFactory {
           _switchResult = MicroserviceType.FUNCTIONAL;
           break;
         case TEAM:
-          _switchResult = MicroserviceType.FUNCTIONAL;
+          _switchResult = null;
           break;
         case FEATURE:
           _switchResult = MicroserviceType.FUNCTIONAL;

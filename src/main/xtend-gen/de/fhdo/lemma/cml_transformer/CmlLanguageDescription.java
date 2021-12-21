@@ -17,7 +17,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @LanguageDescriptionProvider
 @SuppressWarnings("all")
-public class LanguageDescriptions implements LanguageDescriptionProviderI {
+public class CmlLanguageDescription implements LanguageDescriptionProviderI {
   /**
    * The {@link de.fhdo.lemma.model_processing.languages.LanguageDescriptionProviderI} interface defines the{@link de.fhdo.lemma.model_processing.languages.LanguageDescriptionProviderI#getLanguageDescription} method. At
    * runtime, the model processing framework invokes the method with a namespace (for XMI-based models) or file

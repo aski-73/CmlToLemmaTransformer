@@ -1,0 +1,32 @@
+<diagram program="umletino" version="14.4.0-SNAPSHOT"><zoom_level>10</zoom_level><element><id>UMLClass</id><coordinates><x>100</x><y>270</y><w>860</w><h>50</h></coordinates><panel_attributes>*Technology*
+--
+name : String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>560</x><y>440</y><w>80</w><h>30</h></coordinates><panel_attributes>*Protocol*</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>590</x><y>310</y><w>40</w><h>150</h></coordinates><panel_attributes>lt=-&gt;&gt;&gt;&gt;&gt;
+m1=*
+m2=1</panel_attributes><additional_attributes>10;130;10;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>690</x><y>440</y><w>140</w><h>30</h></coordinates><panel_attributes>*OperationAspect*</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>620</x><y>390</y><w>130</w><h>30</h></coordinates><panel_attributes>*ServiceAspect*</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>450</x><y>310</y><w>40</w><h>150</h></coordinates><panel_attributes>lt=-&gt;&gt;&gt;&gt;&gt;
+m1=*
+m2=1</panel_attributes><additional_attributes>10;130;10;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>380</x><y>440</y><w>170</w><h>40</h></coordinates><panel_attributes>*CompatibilityMatrix*
+*Entry*</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>520</x><y>310</y><w>40</w><h>100</h></coordinates><panel_attributes>lt=-&gt;&gt;&gt;&gt;&gt;
+m1=*
+m2=1</panel_attributes><additional_attributes>10;80;10;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>480</x><y>390</y><w>100</w><h>40</h></coordinates><panel_attributes>*Technology*
+*Import*</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>170</x><y>310</y><w>40</w><h>100</h></coordinates><panel_attributes>lt=-&gt;&gt;&gt;&gt;&gt;
+m1=*
+m2=1</panel_attributes><additional_attributes>10;80;10;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>100</x><y>390</y><w>160</w><h>40</h></coordinates><panel_attributes>*TechnologySpecific*
+*PrimitiveType*</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>260</x><y>310</y><w>40</w><h>150</h></coordinates><panel_attributes>lt=-&gt;&gt;&gt;&gt;&gt;
+m1=*
+m2=1</panel_attributes><additional_attributes>10;130;10;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>290</x><y>390</y><w>160</w><h>40</h></coordinates><panel_attributes>*TechnologySpecific*
+*ListType*</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>360</x><y>310</y><w>40</w><h>100</h></coordinates><panel_attributes>lt=-&gt;&gt;&gt;&gt;&gt;
+m1=*
+m2=1</panel_attributes><additional_attributes>10;80;10;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>190</x><y>440</y><w>160</w><h>40</h></coordinates><panel_attributes>*TechnologySpecific*
+*DataStructure*</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>840</x><y>440</y><w>120</w><h>40</h></coordinates><panel_attributes>*Infrastructure*
+*Technology*</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>780</x><y>390</y><w>110</w><h>40</h></coordinates><panel_attributes>*Deployment*
+*Technology*</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>680</x><y>310</y><w>40</w><h>100</h></coordinates><panel_attributes>lt=-&gt;&gt;&gt;&gt;&gt;
+m1=*
+m2=1</panel_attributes><additional_attributes>10;80;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>750</x><y>310</y><w>40</w><h>150</h></coordinates><panel_attributes>lt=-&gt;&gt;&gt;&gt;&gt;
+m1=*
+m2=1</panel_attributes><additional_attributes>10;130;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>820</x><y>310</y><w>40</w><h>100</h></coordinates><panel_attributes>lt=-&gt;&gt;&gt;&gt;&gt;
+m1=*
+m2=1</panel_attributes><additional_attributes>10;80;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>890</x><y>310</y><w>40</w><h>150</h></coordinates><panel_attributes>lt=-&gt;&gt;&gt;&gt;&gt;
+m1=*
+m2=1</panel_attributes><additional_attributes>10;130;10;10</additional_attributes></element><element><id>UMLFrame</id><coordinates><x>90</x><y>210</y><w>880</w><h>280</h></coordinates><panel_attributes>*mm*
+Technology Modeling Language
+(namespace: Technology)</panel_attributes><additional_attributes></additional_attributes></element></diagram>

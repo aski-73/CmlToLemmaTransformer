@@ -15,7 +15,7 @@ import de.fhdo.lemma.model_processing.languages.XtextLanguageDescription
  * process. Among others, these information allow the framework to parse the input models and hide the related
  * complexity from the model processor implementer.
  */
-@LanguageDescriptionProvider class LanguageDescriptions implements LanguageDescriptionProviderI {
+@LanguageDescriptionProvider class CmlLanguageDescription implements LanguageDescriptionProviderI {
 	/** 
 	 * The {@link de.fhdo.lemma.model_processing.languages.LanguageDescriptionProviderI} interface defines the{@link de.fhdo.lemma.model_processing.languages.LanguageDescriptionProviderI#getLanguageDescription} method. At
 	 * runtime, the model processing framework invokes the method with a namespace (for XMI-based models) or file
