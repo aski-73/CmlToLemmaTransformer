@@ -189,7 +189,7 @@ public class DomainDataModelFactory {
       return EcoreUtil.<ComplexType>copy(alreadyMappedType);
     }
     final DataStructure lemmaStructure = this.createDataStructure(obj.getName());
-    this.markedTypes.put(obj.getName(), lemmaStructure);
+    this.markedTypes.put(obj.getName(), EcoreUtil.<DataStructure>copy(lemmaStructure));
     boolean _isAggregateRoot = obj.isAggregateRoot();
     if (_isAggregateRoot) {
       lemmaStructure.getFeatures().add(ComplexTypeFeature.AGGREGATE);
@@ -244,7 +244,7 @@ public class DomainDataModelFactory {
    */
   private ComplexType _mapDomainObjectToConcreteComplexType(final org.contextmapper.tactic.dsl.tacticdsl.Enum obj, final Context ctx) {
     final Enumeration lemmaEnum = this.createEnumeration(obj.getName());
-    this.markedTypes.put(obj.getName(), lemmaEnum);
+    this.markedTypes.put(obj.getName(), EcoreUtil.<Enumeration>copy(lemmaEnum));
     final Consumer<EnumValue> _function = (EnumValue enumValue) -> {
       lemmaEnum.getFields().add(this.createEnumerationField(enumValue.getName()));
     };

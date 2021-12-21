@@ -7,6 +7,7 @@ import org.contextmapper.dsl.contextMappingDSL.UpstreamDownstreamRelationship
 import de.fhdo.lemma.cml_transformer.factory.DomainDataModelFactory
 import org.contextmapper.dsl.contextMappingDSL.ContextMap
 import de.fhdo.lemma.data.ComplexType
+import de.fhdo.lemma.cml_transformer.Util
 
 /**
  * Implements the Conformist relationship by inserting the exposed aggregates of the upstream context into the domain
@@ -35,20 +36,7 @@ class ConformistGenerator extends AbstractRelationshipGenerator {
 			// and also tells which ListTypes are used.
 			(rel as UpstreamDownstreamRelationship).upstreamExposedAggregates.stream.forEach([ agg |
 				val cTypes = DomainDataModelFactory.mapAggregateToComplexType(agg)
-				// Only add complex types which are not already existing. A (domain object or) list type of the upstream might already
-				// exist in the target context because in CML it's possible to reference domain objects (which can contain list types) from other bounded contexts
-				// and the DomainDataModelFactory would already create it in the target context. But this behavior is not wanted because one 
-				// bounded context (microservice) is assigned to one team. Every team must take care of their own (domain objects and) list types.
-				// It's also possible to reference external (domain objects and) list types in LEMMA but it should not be done of the same reason.
-				for (ComplexType cType : cTypes) {
-					val checkComplexType = this.targetCtx.complexTypes.stream.filter([ checkMe |
-						checkMe.name.equals(cType.name)
-					]).findAny
-					if (!checkComplexType.present) {
-						this.targetCtx.complexTypes.add(cType)
-					}
-				}
-
+				Util.addComplexTypesIntoContext(targetCtx, cTypes)
 			])
 		])
 	}

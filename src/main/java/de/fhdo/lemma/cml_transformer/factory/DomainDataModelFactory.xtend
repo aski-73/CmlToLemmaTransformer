@@ -190,7 +190,7 @@ class DomainDataModelFactory {
 
 		val lemmaStructure = createDataStructure(obj.name)
 		
-		markedTypes.put(obj.name, lemmaStructure)
+		markedTypes.put(obj.name, EcoreUtil.copy(lemmaStructure))
 
 		// Determine LEMMA Features
 		if (obj.aggregateRoot) {
@@ -255,7 +255,7 @@ class DomainDataModelFactory {
 	private def dispatch ComplexType mapDomainObjectToConcreteComplexType(Enum obj, Context ctx) {
 		val lemmaEnum = createEnumeration(obj.name)
 		
-		markedTypes.put(obj.name, lemmaEnum)
+		markedTypes.put(obj.name, EcoreUtil.copy(lemmaEnum))
 
 		obj.values.forEach [ enumValue |
 			lemmaEnum.fields.add(createEnumerationField(enumValue.name))

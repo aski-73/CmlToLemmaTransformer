@@ -1,11 +1,11 @@
 package de.fhdo.lemma.cml_transformer.factory.context_map;
 
+import de.fhdo.lemma.cml_transformer.Util;
 import de.fhdo.lemma.cml_transformer.factory.DomainDataModelFactory;
 import de.fhdo.lemma.data.ComplexType;
 import de.fhdo.lemma.data.Context;
 import de.fhdo.lemma.data.DataModel;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -40,19 +40,7 @@ public class ConformistGenerator extends AbstractRelationshipGenerator {
     final Consumer<Relationship> _function = (Relationship rel) -> {
       final Consumer<Aggregate> _function_1 = (Aggregate agg) -> {
         final List<ComplexType> cTypes = DomainDataModelFactory.mapAggregateToComplexType(agg);
-        for (final ComplexType cType : cTypes) {
-          {
-            final Predicate<ComplexType> _function_2 = (ComplexType checkMe) -> {
-              return checkMe.getName().equals(cType.getName());
-            };
-            final Optional<ComplexType> checkComplexType = this.targetCtx.getComplexTypes().stream().filter(_function_2).findAny();
-            boolean _isPresent = checkComplexType.isPresent();
-            boolean _not = (!_isPresent);
-            if (_not) {
-              this.targetCtx.getComplexTypes().add(cType);
-            }
-          }
-        }
+        Util.addComplexTypesIntoContext(this.targetCtx, cTypes);
       };
       ((UpstreamDownstreamRelationship) rel).getUpstreamExposedAggregates().stream().forEach(_function_1);
     };

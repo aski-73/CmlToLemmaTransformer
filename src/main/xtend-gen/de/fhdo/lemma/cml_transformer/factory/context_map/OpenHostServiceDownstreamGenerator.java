@@ -1,5 +1,7 @@
 package de.fhdo.lemma.cml_transformer.factory.context_map;
 
+import de.fhdo.lemma.cml_transformer.Util;
+import de.fhdo.lemma.cml_transformer.factory.DomainDataModelFactory;
 import de.fhdo.lemma.data.ComplexType;
 import de.fhdo.lemma.data.ComplexTypeFeature;
 import de.fhdo.lemma.data.Context;
@@ -77,10 +79,19 @@ public class OpenHostServiceDownstreamGenerator extends AbstractRelationshipGene
                 return _name.equals(_plus);
               };
               final Optional<ComplexType> accessorService = this.targetCtx.getComplexTypes().stream().filter(_function_4).findFirst();
-              if ((appService.isPresent() && (!accessorService.isPresent()))) {
+              if ((appService.isPresent() && accessorService.isEmpty())) {
                 ComplexType _get = appService.get();
-                final DataStructure newAccessorService = this.mapApplicationServiceToAccessor(((DataStructure) _get));
+                final DataStructure newAccessorService = this.createAccessor(((DataStructure) _get));
                 this.targetCtx.getComplexTypes().add(newAccessorService);
+                final Predicate<ComplexType> _function_5 = (ComplexType cType) -> {
+                  return cType.getName().equals(exposedAggregate.getName());
+                };
+                final Optional<ComplexType> exposedAggregateInCml = this.targetCtx.getComplexTypes().stream().filter(_function_5).findAny();
+                boolean _isEmpty = exposedAggregateInCml.isEmpty();
+                if (_isEmpty) {
+                  final List<ComplexType> cTypes = DomainDataModelFactory.mapAggregateToComplexType(exposedAggregate);
+                  Util.addComplexTypesIntoContext(this.targetCtx, cTypes);
+                }
               }
             }
           }
@@ -92,9 +103,13 @@ public class OpenHostServiceDownstreamGenerator extends AbstractRelationshipGene
   
   /**
    * Maps an Application Service that represents the API exposing an Aggregate to another Application Service that
-   * represents an Accessor accessing the API
+   * represents an Accessor accessing the API.
+   * If the exposed aggregate is not in the
+   * 
+   * @param appService DML application service representing the upstream Api
+   * @param exposedAggregate CML aggregate representing the aggregate that is accessed by the Accessor.
    */
-  private DataStructure mapApplicationServiceToAccessor(final DataStructure appService) {
+  private DataStructure createAccessor(final DataStructure appService) {
     final DataStructure accessor = OpenHostServiceDownstreamGenerator.DATA_FACTORY.createDataStructure();
     accessor.setName(appService.getName().replace("Api", "Accessor"));
     accessor.getFeatures().add(ComplexTypeFeature.APPLICATION_SERVICE);

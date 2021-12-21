@@ -5,12 +5,12 @@ ContextMap SmallInsuranceContextMap {
 
     CustomerManagementContext [ACL]<-[OHS] PrintingContext {
         implementationTechnology = "RESTfulHttp"
-        exposedAggregates = PrintingJob
+        exposedAggregates = PrintingJobDto
     }
 
     PolicyManagementContext [CF]<-[OHS] CustomerManagementContext {
         implementationTechnology = "RESTfulHttp"
-        exposedAggregates = Customer
+        exposedAggregates = CustomerDto
     }
 }
 
@@ -21,6 +21,7 @@ BoundedContext PrintingContext {
         Service PrintingJobApi {
             int createPrintingJob(@PrintingJobDto printingJob);
             void deletePrintingJob(int id);
+            @PrintingJobStatisticsDto readPrintingCount(); 
         }
     }
     Aggregate PrintingJob {
@@ -52,6 +53,12 @@ BoundedContext PrintingContext {
             String documentName
             String content
         }
+    }
+    Aggregate PrintingJobStatisticsDto {
+    	ValueObject PrintingJobStatisticsDto {
+    		int printCountGeneral
+    		int printCountLastMonth
+    	}
     }
 }
 
