@@ -31,17 +31,21 @@ public class Util {
     return false;
   }
   
-  public static void addComplexTypesIntoContext(final Context targetCtx, final List<ComplexType> cTypes) {
-    for (final ComplexType cType : cTypes) {
+  public static void addComplexTypesIntoContext(final Context targetCtx, final List<ComplexType> sourceListcTypes) {
+    Util.mergeComplexTypeLists(targetCtx.getComplexTypes(), sourceListcTypes);
+  }
+  
+  public static void mergeComplexTypeLists(final List<ComplexType> targetList, final List<ComplexType> sourceList) {
+    for (final ComplexType sourceElement : sourceList) {
       {
-        final Predicate<ComplexType> _function = (ComplexType checkMe) -> {
-          return checkMe.getName().equals(cType.getName());
+        final Predicate<ComplexType> _function = (ComplexType targetElement) -> {
+          return targetElement.getName().equals(sourceElement.getName());
         };
-        final Optional<ComplexType> checkComplexType = targetCtx.getComplexTypes().stream().filter(_function).findAny();
-        boolean _isPresent = checkComplexType.isPresent();
+        final Optional<ComplexType> checkSourceElement = targetList.stream().filter(_function).findAny();
+        boolean _isPresent = checkSourceElement.isPresent();
         boolean _not = (!_isPresent);
         if (_not) {
-          targetCtx.getComplexTypes().add(EcoreUtil.<ComplexType>copy(cType));
+          targetList.add(EcoreUtil.<ComplexType>copy(sourceElement));
         }
       }
     }

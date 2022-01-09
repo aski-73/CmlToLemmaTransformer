@@ -22,8 +22,7 @@ import de.fhdo.lemma.data.ComplexType
  */
 class AnticorruptionLayerGenerator extends AbstractRelationshipGenerator {
 	static val DATA_FACTORY = DataFactory.eINSTANCE
-	
-		
+
 	/**
 	 * Checks if the given {@link ComplexType} already exists in the {@link Context}.
 	 * If not it will be added to the {@link Context}.
@@ -36,11 +35,21 @@ class AnticorruptionLayerGenerator extends AbstractRelationshipGenerator {
 				return c // Found => return it
 			}
 		}
-		
+
 		// Not found => create it, then return it
 		val copyComplexType = EcoreUtil.copy(cType)
 		copyComplexType.context = ctx
 		ctx.complexTypes.add(copyComplexType)
+		// if the complex type references other complex types, then they also must be added
+		if (cType instanceof DataStructure) {
+			for (field : (cType as DataStructure).dataFields) {
+				if (field.complexType !== null) {
+					findComplexTypeAndCreateIfNotExisting(field.complexType, ctx)
+				}
+			}
+			
+		}
+
 		return copyComplexType
 	}
 
@@ -64,14 +73,15 @@ class AnticorruptionLayerGenerator extends AbstractRelationshipGenerator {
 		rr.stream.forEach([ rel |
 			val cmlUpstreamContext = (rel as UpstreamDownstreamRelationship).upstream
 			val allContexts = this.mappedDataModels.stream().flatMap([dataModel|dataModel.contexts.stream()])
-			
+
 			// Filter the matching LEMMA context. Use findAny because only one will be found at most
-			val lemmaUpstreamContext = allContexts.filter([ctx | ctx.name.equals(cmlUpstreamContext.name)]).findAny() 
+			val lemmaUpstreamContext = allContexts.filter([ctx|ctx.name.equals(cmlUpstreamContext.name)]).findAny()
 			if (lemmaUpstreamContext.empty) {
-				this.errors.add('''Mapping Error: A Mapping of the CML context «cmlUpstreamContext.name» was not found.''')
+				this.errors.
+					add('''Mapping Error: A Mapping of the CML context «cmlUpstreamContext.name» was not found.''')
 				return
 			}
-			
+
 			cmlDownstreamContext.aggregates.stream.flatMap([agg|agg.domainObjects.stream]) // put all domain objects in one stream
 			.filter([obj|obj.hint !== null && obj.hint.startsWith(DownstreamRole.ANTICORRUPTION_LAYER.literal + ":")]) // domain object has a hint starting with "ACL:"
 			.map([ obj | // remove "ACL:" prefix => we get the desired source aggregate (X)
@@ -85,8 +95,11 @@ class AnticorruptionLayerGenerator extends AbstractRelationshipGenerator {
 						// been mapped by the LemmaDomainDataModelFactory previously. Therefore the next steps
 						// will use the LEMMA Domain Objects in order to work with the already mapped types.
 						// Find X in the LEMMA upstream context and Y in the LEMMA downstream context and put them in a container object
-						val x = lemmaUpstreamContext.get.complexTypes.stream.filter([cType| cType.name.equals(exposedAgg.name + "Dto")]).findAny.get
-						val y = this.targetCtx.complexTypes.stream.filter([cType| cType.name.equals(obj.name)]).findAny.get
+						val x = lemmaUpstreamContext.get.complexTypes.stream.filter([ cType |
+							cType.name.equals(exposedAgg.name + "Dto")
+						]).findAny.get
+						val y = this.targetCtx.complexTypes.stream.filter([cType|cType.name.equals(obj.name)]).findAny.
+							get
 						return new FromTo(x as DataStructure, y as DataStructure)
 					}
 				}
@@ -102,20 +115,20 @@ class AnticorruptionLayerGenerator extends AbstractRelationshipGenerator {
 				val aclTranslator = DATA_FACTORY.createDataStructure
 				aclTranslator.name = fromTo.source.name + "Translator"
 				aclTranslator.features.add(ComplexTypeFeature.DOMAIN_SERVICE)
-				
+
 				// Translation operation of the translator
 				val opParam = DATA_FACTORY.createDataOperationParameter
 				opParam.name = String.valueOf(fromTo.source.name.charAt(0)).toLowerCase
 				// Param is always a complex type since the ACL hint in CML can only be places inside of (CML) complex types
-				opParam.complexType = de.fhdo.lemma.cml_transformer.factory.context_map.AnticorruptionLayerGenerator.findComplexTypeAndCreateIfNotExisting(fromTo.source, targetCtx)
+				opParam.complexType = findComplexTypeAndCreateIfNotExisting(fromTo.source, targetCtx)
 				val op = DATA_FACTORY.createDataOperation
 				op.name = '''transform«fromTo.source.name»To«fromTo.target.name»'''
 				op.complexReturnType = EcoreUtil.copy(fromTo.target)
 				op.parameters.add(opParam)
-				
+
 				// Add operation to the translator DataStructure
 				aclTranslator.operations.add(op)
-				
+
 				// Add translator into the LEMMA Context
 				this.targetCtx.complexTypes.add(aclTranslator)
 			])

@@ -92,8 +92,8 @@ import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceUpstream
 			val ctx = dataModel.contexts.get(0)
 
 			// Add OHS Accessor(s) in the context if he is an OHS downstream context
-			val ohsGenerator = new OpenHostServiceDownstreamGenerator(ctx, cmlModel.map, dataModels)
-			ohsGenerator.map()
+			val ohsDownStreamGenerator = new OpenHostServiceDownstreamGenerator(ctx, cmlModel.map, dataModels)
+			ohsDownStreamGenerator.map()
 
 			// Add Anticorruption Layer if context is an ACL
 			val aclGenerator = new AnticorruptionLayerGenerator(ctx, cmlModel.map, dataModels)

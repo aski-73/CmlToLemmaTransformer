@@ -3,14 +3,9 @@ package de.fhdo.lemma.cml_transformer.factory.context_map;
 import de.fhdo.lemma.cml_transformer.Util;
 import de.fhdo.lemma.cml_transformer.factory.DomainDataModelFactory;
 import de.fhdo.lemma.data.ComplexType;
-import de.fhdo.lemma.data.ComplexTypeFeature;
 import de.fhdo.lemma.data.Context;
 import de.fhdo.lemma.data.DataFactory;
 import de.fhdo.lemma.data.DataModel;
-import de.fhdo.lemma.data.DataOperation;
-import de.fhdo.lemma.data.DataOperationParameter;
-import de.fhdo.lemma.data.DataStructure;
-import de.fhdo.lemma.data.PrimitiveType;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -24,10 +19,8 @@ import org.contextmapper.dsl.contextMappingDSL.ContextMap;
 import org.contextmapper.dsl.contextMappingDSL.Relationship;
 import org.contextmapper.dsl.contextMappingDSL.UpstreamDownstreamRelationship;
 import org.contextmapper.dsl.contextMappingDSL.UpstreamRole;
+import org.contextmapper.tactic.dsl.tacticdsl.Service;
 import org.eclipse.emf.common.util.EList;
-import org.eclipse.emf.ecore.util.EcoreUtil;
-import org.eclipse.xtext.xbase.lib.Functions.Function1;
-import org.eclipse.xtext.xbase.lib.IterableExtensions;
 
 /**
  * Downstream implementation of an OHS
@@ -65,13 +58,13 @@ public class OpenHostServiceDownstreamGenerator extends AbstractRelationshipGene
           EList<Aggregate> _upstreamExposedAggregates = ((UpstreamDownstreamRelationship) rel).getUpstreamExposedAggregates();
           for (final Aggregate exposedAggregate : _upstreamExposedAggregates) {
             {
-              final Predicate<ComplexType> _function_3 = (ComplexType cType) -> {
-                String _name = cType.getName();
+              final Predicate<Service> _function_3 = (Service cmlAppService) -> {
+                String _name = cmlAppService.getName();
                 String _name_1 = exposedAggregate.getName();
                 String _plus = (_name_1 + "Api");
                 return _name.equals(_plus);
               };
-              final Optional<ComplexType> appService = upstreamContext.getComplexTypes().stream().filter(_function_3).findFirst();
+              final Optional<Service> appService = upstreamBoundedContext.getApplication().getServices().stream().filter(_function_3).findAny();
               final Predicate<ComplexType> _function_4 = (ComplexType cType) -> {
                 String _name = cType.getName();
                 String _name_1 = exposedAggregate.getName();
@@ -80,18 +73,7 @@ public class OpenHostServiceDownstreamGenerator extends AbstractRelationshipGene
               };
               final Optional<ComplexType> accessorService = this.targetCtx.getComplexTypes().stream().filter(_function_4).findFirst();
               if ((appService.isPresent() && accessorService.isEmpty())) {
-                ComplexType _get = appService.get();
-                final DataStructure newAccessorService = this.createAccessor(((DataStructure) _get));
-                this.targetCtx.getComplexTypes().add(newAccessorService);
-                final Predicate<ComplexType> _function_5 = (ComplexType cType) -> {
-                  return cType.getName().equals(exposedAggregate.getName());
-                };
-                final Optional<ComplexType> exposedAggregateInCml = this.targetCtx.getComplexTypes().stream().filter(_function_5).findAny();
-                boolean _isEmpty = exposedAggregateInCml.isEmpty();
-                if (_isEmpty) {
-                  final List<ComplexType> cTypes = DomainDataModelFactory.mapAggregateToComplexType(exposedAggregate);
-                  Util.addComplexTypesIntoContext(this.targetCtx, cTypes);
-                }
+                this.addAccessor(appService.get());
               }
             }
           }
@@ -109,36 +91,10 @@ public class OpenHostServiceDownstreamGenerator extends AbstractRelationshipGene
    * @param appService DML application service representing the upstream Api
    * @param exposedAggregate CML aggregate representing the aggregate that is accessed by the Accessor.
    */
-  private DataStructure createAccessor(final DataStructure appService) {
-    final DataStructure accessor = OpenHostServiceDownstreamGenerator.DATA_FACTORY.createDataStructure();
-    accessor.setName(appService.getName().replace("Api", "Accessor"));
-    accessor.getFeatures().add(ComplexTypeFeature.APPLICATION_SERVICE);
-    final Consumer<DataOperation> _function = (DataOperation appServiceOp) -> {
-      final Function1<DataOperationParameter, Boolean> _function_1 = (DataOperationParameter param) -> {
-        return Boolean.valueOf(((param.getComplexType() != null) && param.getComplexType().getName().contains("Dto")));
-      };
-      final Iterable<DataOperationParameter> dto = IterableExtensions.<DataOperationParameter>filter(appServiceOp.getParameters(), _function_1);
-      int _size = IterableExtensions.size(dto);
-      int _size_1 = appServiceOp.getParameters().size();
-      boolean _equals = (_size == _size_1);
-      if (_equals) {
-        accessor.getOperations().add(EcoreUtil.<DataOperation>copy(appServiceOp));
-      } else {
-        final Predicate<DataOperationParameter> _function_2 = (DataOperationParameter param) -> {
-          PrimitiveType _primitiveType = param.getPrimitiveType();
-          return (_primitiveType != null);
-        };
-        final List<DataOperationParameter> primitives = appServiceOp.getParameters().stream().filter(_function_2).collect(Collectors.<DataOperationParameter>toList());
-        int _size_2 = primitives.size();
-        int _size_3 = appServiceOp.getParameters().size();
-        boolean _equals_1 = (_size_2 == _size_3);
-        if (_equals_1) {
-          accessor.getOperations().add(EcoreUtil.<DataOperation>copy(appServiceOp));
-        }
-      }
-    };
-    appService.getOperations().forEach(_function);
-    return accessor;
+  private void addAccessor(final Service apiService) {
+    apiService.setName(apiService.getName().replace("Api", "Accessor"));
+    final List<ComplexType> cTypes = DomainDataModelFactory.mapServiceToComplexType(apiService, false);
+    Util.addComplexTypesIntoContext(this.targetCtx, cTypes);
   }
   
   /**

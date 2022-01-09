@@ -122,6 +122,7 @@ class OpenHostServiceUpstreamGenerator extends AbstractRelationshipGenerator {
 
 	/**
 	 * TODO Must also use the CML Application Service in order to get the visibilty of the operations
+	 * 
 	 * Maps a LEMMA Application Service to a LEMMA SML {@link Interface}
 	 * See sml/metamodel-interfaces-operations.uxf and sml/metamodel-endpoints.uxf for reference
 	 * 
@@ -144,7 +145,8 @@ class OpenHostServiceUpstreamGenerator extends AbstractRelationshipGenerator {
 				importedServiceAspect.importedAspect = techFactory.mapMethodNamesToServiceAspectNames(serviceOp.name)
 				importedServiceAspect.import = technology.returnImportForTechnology
 				// Add Endpoint. URI is "/InterfaceName". Protocol is the first protocol of the technology
-				// since its not possible to determine which protocol to use from the CML model
+				// since its not possible to determine which protocol to use from the CML model.
+				// As for now only a Rest-Technology exists that contains one protocoll ("rest")
 				val importedProtocol = SERVICE_FACTORY.createImportedProtocolAndDataFormat
 				importedProtocol.dataFormat = technology.protocols.get(0).dataFormats.get(0)
 				importedProtocol.importedProtocol = technology.protocols.get(0)
@@ -180,7 +182,7 @@ class OpenHostServiceUpstreamGenerator extends AbstractRelationshipGenerator {
 	}
 
 	/**
-	 * Maps LEMMA {@link DataOperation} to a {@link Operation] of a {@link ServiceInterface} 
+	 * Maps LEMMA {@link DataOperation} to a {@link Operation} of a {@link ServiceInterface} 
 	 */
 	private def mapDataOperationToServiceOperation(DataOperation dataOperation, List<Import> imports) {
 		val operation = SERVICE_FACTORY.createOperation
@@ -195,6 +197,8 @@ class OpenHostServiceUpstreamGenerator extends AbstractRelationshipGenerator {
 				val paramTypeImport = returnImportForComplexType(dataOperation.complexReturnType)
 				importedType.import = paramTypeImport
 				returnParam.importedType = importedType
+				returnParam.importedType.type = EcoreUtil.copy(dataOperation.complexReturnType)
+				
 				
 				// Need a deep copy because xcore models must contain unique objects
 				val paramTypeImportClone = EcoreUtil.copy(paramTypeImport)
@@ -202,7 +206,7 @@ class OpenHostServiceUpstreamGenerator extends AbstractRelationshipGenerator {
 					imports.add(paramTypeImportClone)
 				}
 			} else { // Primitive
-				returnParam.primitiveType = dataOperation.primitiveReturnType
+				returnParam.primitiveType = EcoreUtil.copy(dataOperation.primitiveReturnType)
 			}
 			returnParam.exchangePattern = ExchangePattern.OUT
 			operation.parameters.add(returnParam)
@@ -218,7 +222,7 @@ class OpenHostServiceUpstreamGenerator extends AbstractRelationshipGenerator {
 				val complexTypeImport = returnImportForComplexType(param.complexType)
 				importedType.import = complexTypeImport
 				serviceOpParam.importedType = importedType
-				serviceOpParam.importedType.type = param.complexType
+				serviceOpParam.importedType.type = EcoreUtil.copy(param.complexType)
 				
 				// Need a deep copy because xcore models must contain unique objects
 				val complexTypeImportClone = EcoreUtil.copy(complexTypeImport)
@@ -226,7 +230,7 @@ class OpenHostServiceUpstreamGenerator extends AbstractRelationshipGenerator {
 					imports.add(complexTypeImportClone)
 				}
 			} else { // Primitive
-				serviceOpParam.primitiveType = param.primitiveType
+				serviceOpParam.primitiveType = EcoreUtil.copy(param.primitiveType)
 			}
 			operation.parameters.add(serviceOpParam)
 		])

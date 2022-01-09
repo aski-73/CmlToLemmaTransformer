@@ -4,6 +4,7 @@ import de.fhdo.lemma.data.ComplexType;
 import de.fhdo.lemma.data.ComplexTypeFeature;
 import de.fhdo.lemma.data.Context;
 import de.fhdo.lemma.data.DataFactory;
+import de.fhdo.lemma.data.DataField;
 import de.fhdo.lemma.data.DataModel;
 import de.fhdo.lemma.data.DataOperation;
 import de.fhdo.lemma.data.DataOperationParameter;
@@ -126,6 +127,16 @@ public class AnticorruptionLayerGenerator extends AbstractRelationshipGenerator 
     final ComplexType copyComplexType = EcoreUtil.<ComplexType>copy(cType);
     copyComplexType.setContext(ctx);
     ctx.getComplexTypes().add(copyComplexType);
+    if ((cType instanceof DataStructure)) {
+      EList<DataField> _dataFields = ((DataStructure) cType).getDataFields();
+      for (final DataField field : _dataFields) {
+        ComplexType _complexType = field.getComplexType();
+        boolean _tripleNotEquals = (_complexType != null);
+        if (_tripleNotEquals) {
+          AnticorruptionLayerGenerator.findComplexTypeAndCreateIfNotExisting(field.getComplexType(), ctx);
+        }
+      }
+    }
     return copyComplexType;
   }
   

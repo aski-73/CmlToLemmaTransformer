@@ -101,8 +101,8 @@ public class LemmaCodeGenerationModule extends AbstractCodeGenerationModule {
       {
         final Context ctx = dataModel.getContexts().get(0);
         ContextMap _map = cmlModel.getMap();
-        final OpenHostServiceDownstreamGenerator ohsGenerator = new OpenHostServiceDownstreamGenerator(ctx, _map, dataModels);
-        ohsGenerator.map();
+        final OpenHostServiceDownstreamGenerator ohsDownStreamGenerator = new OpenHostServiceDownstreamGenerator(ctx, _map, dataModels);
+        ohsDownStreamGenerator.map();
         ContextMap _map_1 = cmlModel.getMap();
         final AnticorruptionLayerGenerator aclGenerator = new AnticorruptionLayerGenerator(ctx, _map_1, dataModels);
         aclGenerator.map();

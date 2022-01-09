@@ -14,6 +14,7 @@ import org.eclipse.emf.ecore.util.EcoreUtil
 import java.util.List
 import de.fhdo.lemma.cml_transformer.factory.DomainDataModelFactory
 import de.fhdo.lemma.cml_transformer.Util
+import org.contextmapper.tactic.dsl.tacticdsl.Service
 
 /**
  * Downstream implementation of an OHS
@@ -46,11 +47,15 @@ class OpenHostServiceDownstreamGenerator extends AbstractRelationshipGenerator {
 				// For every exposed aggregate X look up the Application Service in the LEMMA Context that exposes X
 				for (exposedAggregate : (rel as UpstreamDownstreamRelationship).upstreamExposedAggregates) {
 
+					val appService = upstreamBoundedContext.application.services.stream.filter[cmlAppService|
+						cmlAppService.name.equals(exposedAggregate.name + "Api")
+					].findAny()
+
 
 					// "Api"-Service that must already exist in the DML DataModel
-					val appService = upstreamContext.complexTypes.stream.filter [ cType |
-						cType.name.equals(exposedAggregate.name + "Api")
-					].findFirst()
+//					val appService = upstreamContext.complexTypes.stream.filter [ cType |
+//						cType.name.equals(exposedAggregate.name + "Api")
+//					].findFirst()
 
 					// Check if an Accessor is already defined for the Api
 					val accessorService = this.targetCtx.complexTypes.stream.filter [ cType |
@@ -59,18 +64,7 @@ class OpenHostServiceDownstreamGenerator extends AbstractRelationshipGenerator {
 
 					if (appService.isPresent && accessorService.empty) {
 						// Create accessor
-						val newAccessorService = createAccessor(appService.get as DataStructure)
-						targetCtx.complexTypes.add(newAccessorService)
-
-						// Add the exposed aggregate into the downstream domain model (if not existing yet)
-						val exposedAggregateInCml = targetCtx.complexTypes.stream.filter [ cType |
-							cType.name.equals(exposedAggregate.name)
-						].findAny()
-
-						if (exposedAggregateInCml.empty) {
-							val cTypes = DomainDataModelFactory.mapAggregateToComplexType(exposedAggregate)
-							Util.addComplexTypesIntoContext(targetCtx, cTypes)
-						}
+						addAccessor(appService.get)
 					}
 				}
 			]
@@ -86,33 +80,11 @@ class OpenHostServiceDownstreamGenerator extends AbstractRelationshipGenerator {
 	 * @param appService DML application service representing the upstream Api
 	 * @param exposedAggregate CML aggregate representing the aggregate that is accessed by the Accessor.
 	 */
-	private def createAccessor(DataStructure appService) {
-		val accessor = DATA_FACTORY.createDataStructure
-		accessor.name = appService.name.replace("Api", "Accessor")
-		accessor.features.add(ComplexTypeFeature.APPLICATION_SERVICE)
-
-		// Add operations
-		appService.operations.forEach [ appServiceOp |
-			// But only add those operations that have a Dtos as parameters or only primitive types
-			// in order to keep the domain model save from the upstream domain model
-			val dto = appServiceOp.parameters.filter [ param |
-				param.complexType !== null && param.complexType.name.contains("Dto")
-			]
-
-			if (dto.size == appServiceOp.parameters.size) {
-				accessor.operations.add(EcoreUtil.copy(appServiceOp))
-			// In order to use the dto, it must be added to the Context
-			} else { // check for only primitives
-				val primitives = appServiceOp.parameters.stream.filter [ param |
-					param.primitiveType !== null
-				].collect(Collectors.toList())
-				if (primitives.size == appServiceOp.parameters.size) {
-					accessor.operations.add(EcoreUtil.copy(appServiceOp))
-				}
-			}
-		]
-
-		return accessor
+	private def addAccessor(Service apiService) {
+		// Create accessor
+		apiService.name = apiService.name.replace("Api", "Accessor")
+		val cTypes = DomainDataModelFactory.mapServiceToComplexType(apiService, false)
+		Util.addComplexTypesIntoContext(targetCtx, cTypes)
 	}
 
 	/**

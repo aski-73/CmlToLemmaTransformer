@@ -5,18 +5,19 @@ ContextMap SmallInsuranceContextMap {
 
     CustomerManagementContext [ACL]<-[OHS] PrintingContext {
         implementationTechnology = "RESTfulHttp"
-        exposedAggregates = PrintingJobDto
+        exposedAggregates = PrintingJob
     }
 
     PolicyManagementContext [CF]<-[OHS] CustomerManagementContext {
         implementationTechnology = "RESTfulHttp"
-        exposedAggregates = CustomerDto
+        exposedAggregates = Customer
     }
 }
 
 /* Bounded Context Definitions */
 // OHS
 BoundedContext PrintingContext {
+	type = FEATURE
     Application {
         Service PrintingJobApi {
             int createPrintingJob(@PrintingJobDto printingJob);
@@ -45,7 +46,6 @@ BoundedContext PrintingContext {
     }
     Aggregate PrintingJobDto {
         ValueObject PrintingJobDto {
-            aggregateRoot
             - DocumentDto document
             String issuer
         }
@@ -70,12 +70,7 @@ BoundedContext CustomerManagementContext {
 
     // Application Services
     Application {
-        Service PrintingJobAccessor {
-            int createPrintingJob(@PrintingJobDto p);
-            void deletePrintingJob(int id);
-        }
-
-        Service CustomerApi {
+       Service CustomerApi {
             int createCustomer(@CustomerDto customer);
             void deleteCustomer(int id);
         }
@@ -92,7 +87,6 @@ BoundedContext CustomerManagementContext {
             int id key
             String firstname
             String lastname
-            - Document docFromPrintingContext
             - List<Address> addresses
             Repository CustomerRepository {
             	void saveCustomer(@Customer c);

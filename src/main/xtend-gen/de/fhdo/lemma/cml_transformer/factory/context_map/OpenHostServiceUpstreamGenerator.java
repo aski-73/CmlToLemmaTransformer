@@ -8,6 +8,7 @@ import de.fhdo.lemma.data.DataModel;
 import de.fhdo.lemma.data.DataOperation;
 import de.fhdo.lemma.data.DataOperationParameter;
 import de.fhdo.lemma.data.DataStructure;
+import de.fhdo.lemma.data.PrimitiveType;
 import de.fhdo.lemma.service.Endpoint;
 import de.fhdo.lemma.service.Import;
 import de.fhdo.lemma.service.ImportType;
@@ -127,6 +128,7 @@ public class OpenHostServiceUpstreamGenerator extends AbstractRelationshipGenera
   
   /**
    * TODO Must also use the CML Application Service in order to get the visibilty of the operations
+   * 
    * Maps a LEMMA Application Service to a LEMMA SML {@link Interface}
    * See sml/metamodel-interfaces-operations.uxf and sml/metamodel-endpoints.uxf for reference
    * 
@@ -180,7 +182,7 @@ public class OpenHostServiceUpstreamGenerator extends AbstractRelationshipGenera
   }
   
   /**
-   * Maps LEMMA {@link DataOperation} to a {@link Operation] of a {@link ServiceInterface}
+   * Maps LEMMA {@link DataOperation} to a {@link Operation} of a {@link ServiceInterface}
    */
   private Operation mapDataOperationToServiceOperation(final DataOperation dataOperation, final List<Import> imports) {
     final Operation operation = OpenHostServiceUpstreamGenerator.SERVICE_FACTORY.createOperation();
@@ -198,6 +200,8 @@ public class OpenHostServiceUpstreamGenerator extends AbstractRelationshipGenera
         final Import paramTypeImport = this.returnImportForComplexType(dataOperation.getComplexReturnType());
         importedType.setImport(paramTypeImport);
         returnParam.setImportedType(importedType);
+        ImportedType _importedType = returnParam.getImportedType();
+        _importedType.setType(EcoreUtil.<ComplexType>copy(dataOperation.getComplexReturnType()));
         final Import paramTypeImportClone = EcoreUtil.<Import>copy(paramTypeImport);
         boolean _importExists = Util.importExists(imports, paramTypeImportClone);
         boolean _not_1 = (!_importExists);
@@ -205,7 +209,7 @@ public class OpenHostServiceUpstreamGenerator extends AbstractRelationshipGenera
           imports.add(paramTypeImportClone);
         }
       } else {
-        returnParam.setPrimitiveType(dataOperation.getPrimitiveReturnType());
+        returnParam.setPrimitiveType(EcoreUtil.<PrimitiveType>copy(dataOperation.getPrimitiveReturnType()));
       }
       returnParam.setExchangePattern(ExchangePattern.OUT);
       operation.getParameters().add(returnParam);
@@ -221,8 +225,8 @@ public class OpenHostServiceUpstreamGenerator extends AbstractRelationshipGenera
         final Import complexTypeImport = this.returnImportForComplexType(param.getComplexType());
         importedType_1.setImport(complexTypeImport);
         serviceOpParam.setImportedType(importedType_1);
-        ImportedType _importedType = serviceOpParam.getImportedType();
-        _importedType.setType(param.getComplexType());
+        ImportedType _importedType_1 = serviceOpParam.getImportedType();
+        _importedType_1.setType(EcoreUtil.<ComplexType>copy(param.getComplexType()));
         final Import complexTypeImportClone = EcoreUtil.<Import>copy(complexTypeImport);
         boolean _importExists_1 = Util.importExists(imports, complexTypeImportClone);
         boolean _not_2 = (!_importExists_1);
@@ -230,7 +234,7 @@ public class OpenHostServiceUpstreamGenerator extends AbstractRelationshipGenera
           imports.add(complexTypeImportClone);
         }
       } else {
-        serviceOpParam.setPrimitiveType(param.getPrimitiveType());
+        serviceOpParam.setPrimitiveType(EcoreUtil.<PrimitiveType>copy(param.getPrimitiveType()));
       }
       operation.getParameters().add(serviceOpParam);
     };
