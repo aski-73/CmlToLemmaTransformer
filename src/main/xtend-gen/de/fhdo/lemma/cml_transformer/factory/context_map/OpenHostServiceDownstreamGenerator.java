@@ -84,9 +84,8 @@ public class OpenHostServiceDownstreamGenerator extends AbstractRelationshipGene
   }
   
   /**
-   * Maps an Application Service that represents the API exposing an Aggregate to another Application Service that
+   * Maps an CML Application Service that represents the API exposing an Aggregate to DML Application Service that
    * represents an Accessor accessing the API.
-   * If the exposed aggregate is not in the
    * 
    * @param appService DML application service representing the upstream Api
    * @param exposedAggregate CML aggregate representing the aggregate that is accessed by the Accessor.

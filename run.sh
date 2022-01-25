@@ -6,4 +6,4 @@
 java -jar build/libs/cml_transformer-standalone.jar \
   -s "./example models/cml/smallinsurance/small_insurance.cml" \
   -i "./example models/cml/smallinsurance/small_insurance.cml" \
-  -t "./generated code"
+  -t "/tmp/cml/"

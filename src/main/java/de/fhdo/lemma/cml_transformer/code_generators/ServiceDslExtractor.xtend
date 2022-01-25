@@ -18,6 +18,11 @@ import de.fhdo.lemma.technology.ExchangePattern
 import de.fhdo.lemma.technology.Protocol
 import de.fhdo.lemma.service.ImportedServiceAspect
 import de.fhdo.lemma.data.Type
+import de.fhdo.lemma.service.ProtocolSpecification
+import java.util.List
+import java.util.stream.Collectors
+import java.util.HashMap
+import de.fhdo.lemma.service.PossiblyImportedMicroservice
 
 /**
  * Model-to-text extractor for the Service DSL.
@@ -71,7 +76,11 @@ class ServiceDslExtractor {
         val preamble = '''«service.visibility.generate» «service.type.generate»'''
         '''
         «service.generateTechAnnotation»
+        «service.generateProtocolSpecifcationAnnotation»
         «preamble» microservice «service.lemmaName» {
+        	«IF !service.requiredMicroservices.empty»
+        		«service.requiredMicroservices.generate»
+        	«ENDIF»
             «IF service.interfaces.exists[!operations.empty]»
                 «FOR iface : service.interfaces»
                     «iface.generate»
@@ -114,6 +123,19 @@ class ServiceDslExtractor {
             case UTILITY: 'utility'
             default: throw new IllegalArgumentException('''Type «type» is not supported.''')
         }
+    }
+    
+    /**
+     * Extract required microservices statement 
+     */
+    private def generate(List<PossiblyImportedMicroservice> requiredMicroservices) {
+    	return '''
+    	required microservices {
+    		«FOR required: requiredMicroservices»
+    			«required.import.name»::«required.microservice.name»
+			«ENDFOR»
+    	}
+    	'''
     }
 
     /**
@@ -244,6 +266,18 @@ class ServiceDslExtractor {
     private def generateTechAnnotation(Microservice service) {
         '''«FOR tech : service.serviceModel.imports.filter[it.importType == ImportType.TECHNOLOGY]
             »@technology(«tech.name»)«ENDFOR»'''
+    }
+    
+    /**
+     * Extract Protocol Specification of a Microservice by looking at the protocols used in the endpoints of 
+     * interface operations
+     */
+    private def generateProtocolSpecifcationAnnotation(Microservice service) {
+		val protocolSpecs = de.fhdo.lemma.cml_transformer.Util.returnMicroserviceProtocolSpecification(service)
+    	
+    	'''
+    	«FOR protocolSpec: protocolSpecs»@«protocolSpec.communicationType.generate»(«protocolSpec.protocol.importedProtocol.generate»)«ENDFOR»
+    	'''
     }
     
     /**

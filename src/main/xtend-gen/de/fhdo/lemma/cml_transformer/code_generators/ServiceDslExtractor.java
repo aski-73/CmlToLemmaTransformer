@@ -1,6 +1,7 @@
 package de.fhdo.lemma.cml_transformer.code_generators;
 
 import com.google.common.base.Objects;
+import de.fhdo.lemma.cml_transformer.Util;
 import de.fhdo.lemma.data.ComplexType;
 import de.fhdo.lemma.data.PrimitiveType;
 import de.fhdo.lemma.data.Type;
@@ -16,6 +17,8 @@ import de.fhdo.lemma.service.Microservice;
 import de.fhdo.lemma.service.MicroserviceType;
 import de.fhdo.lemma.service.Operation;
 import de.fhdo.lemma.service.Parameter;
+import de.fhdo.lemma.service.PossiblyImportedMicroservice;
+import de.fhdo.lemma.service.ProtocolSpecification;
 import de.fhdo.lemma.service.ServiceModel;
 import de.fhdo.lemma.service.Visibility;
 import de.fhdo.lemma.technology.CommunicationType;
@@ -23,6 +26,7 @@ import de.fhdo.lemma.technology.ExchangePattern;
 import de.fhdo.lemma.technology.Protocol;
 import de.fhdo.lemma.technology.Technology;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.xtend2.lib.StringConcatenation;
@@ -166,6 +170,9 @@ public class ServiceDslExtractor {
       CharSequence _generateTechAnnotation = this.generateTechAnnotation(service);
       _builder_1.append(_generateTechAnnotation);
       _builder_1.newLineIfNotEmpty();
+      CharSequence _generateProtocolSpecifcationAnnotation = this.generateProtocolSpecifcationAnnotation(service);
+      _builder_1.append(_generateProtocolSpecifcationAnnotation);
+      _builder_1.newLineIfNotEmpty();
       _builder_1.append(preamble);
       _builder_1.append(" microservice ");
       String _lemmaName = this.lemmaName(service);
@@ -173,9 +180,19 @@ public class ServiceDslExtractor {
       _builder_1.append(" {");
       _builder_1.newLineIfNotEmpty();
       {
+        boolean _isEmpty = service.getRequiredMicroservices().isEmpty();
+        boolean _not = (!_isEmpty);
+        if (_not) {
+          _builder_1.append("\t");
+          String _generate_2 = this.generate(service.getRequiredMicroservices());
+          _builder_1.append(_generate_2, "\t");
+          _builder_1.newLineIfNotEmpty();
+        }
+      }
+      {
         final Function1<Interface, Boolean> _function = (Interface it) -> {
-          boolean _isEmpty = it.getOperations().isEmpty();
-          return Boolean.valueOf((!_isEmpty));
+          boolean _isEmpty_1 = it.getOperations().isEmpty();
+          return Boolean.valueOf((!_isEmpty_1));
         };
         boolean _exists = IterableExtensions.<Interface>exists(service.getInterfaces(), _function);
         if (_exists) {
@@ -183,8 +200,8 @@ public class ServiceDslExtractor {
             EList<Interface> _interfaces = service.getInterfaces();
             for(final Interface iface : _interfaces) {
               _builder_1.append("    ");
-              CharSequence _generate_2 = this.generate(iface);
-              _builder_1.append(_generate_2, "    ");
+              CharSequence _generate_3 = this.generate(iface);
+              _builder_1.append(_generate_3, "    ");
               _builder_1.newLineIfNotEmpty();
             }
           }
@@ -282,6 +299,29 @@ public class ServiceDslExtractor {
       throw new IllegalArgumentException(_builder.toString());
     }
     return _switchResult;
+  }
+  
+  /**
+   * Extract required microservices statement
+   */
+  private String generate(final List<PossiblyImportedMicroservice> requiredMicroservices) {
+    StringConcatenation _builder = new StringConcatenation();
+    _builder.append("required microservices {");
+    _builder.newLine();
+    {
+      for(final PossiblyImportedMicroservice required : requiredMicroservices) {
+        _builder.append("\t");
+        String _name = required.getImport().getName();
+        _builder.append(_name, "\t");
+        _builder.append("::");
+        String _name_1 = required.getMicroservice().getName();
+        _builder.append(_name_1, "\t");
+        _builder.newLineIfNotEmpty();
+      }
+    }
+    _builder.append("}");
+    _builder.newLine();
+    return _builder.toString();
   }
   
   /**
@@ -603,6 +643,32 @@ public class ServiceDslExtractor {
       }
     }
     return _builder;
+  }
+  
+  /**
+   * Extract Protocol Specification of a Microservice by looking at the protocols used in the endpoints of
+   * interface operations
+   */
+  private CharSequence generateProtocolSpecifcationAnnotation(final Microservice service) {
+    CharSequence _xblockexpression = null;
+    {
+      final Collection<ProtocolSpecification> protocolSpecs = Util.returnMicroserviceProtocolSpecification(service);
+      StringConcatenation _builder = new StringConcatenation();
+      {
+        for(final ProtocolSpecification protocolSpec : protocolSpecs) {
+          _builder.append("@");
+          String _generate = this.generate(protocolSpec.getCommunicationType());
+          _builder.append(_generate);
+          _builder.append("(");
+          String _generate_1 = this.generate(protocolSpec.getProtocol().getImportedProtocol());
+          _builder.append(_generate_1);
+          _builder.append(")");
+        }
+      }
+      _builder.newLineIfNotEmpty();
+      _xblockexpression = _builder;
+    }
+    return _xblockexpression;
   }
   
   /**

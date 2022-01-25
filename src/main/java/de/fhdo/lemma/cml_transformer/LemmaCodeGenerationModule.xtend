@@ -23,6 +23,8 @@ import org.eclipse.emf.ecore.util.EcoreUtil
 import de.fhdo.lemma.cml_transformer.factory.DomainDataModelFactory
 import de.fhdo.lemma.cml_transformer.factory.ServiceModelFactory
 import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceUpstreamGenerator
+import java.util.ArrayList
+import de.fhdo.lemma.service.ServiceModel
 
 /** 
  * LEMMA's model processing framework supports model-based structuring of code
@@ -86,7 +88,10 @@ import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceUpstream
 		 * relations.
 		 * E. g. a conformist (downstream) needs to know about the upstream context in order to 
 		 * copy the exposed aggregates.
+		 * 
+		 * Also create a service model (microservice) for each data model
 		 */
+		val serviceModels = new ArrayList<ServiceModel>(dataModels.size)
 		for (dataModel : dataModels) {
 			// Since a DataModels contains only one context get the first element of the list
 			val ctx = dataModel.contexts.get(0)
@@ -110,31 +115,46 @@ import de.fhdo.lemma.cml_transformer.factory.context_map.OpenHostServiceUpstream
 			val serviceModelFactory = new ServiceModelFactory(cmlModel, EcoreUtil.copy(ctx))
 			val serviceModel = serviceModelFactory.generateServiceModel(dataModelPath, serviceModelPath,
 				technologyModelPath)
-				
+
 			// Add OHS Api(s) in the previously generated microservice if he is an upstream context in an OHS relatioship
 			val ohsUpstreamGenerator = new OpenHostServiceUpstreamGenerator(ctx, serviceModel,
 				serviceModel.microservices.get(0), cmlModel.map, dataModelPath, technologyModelPath, technologies)
 			ohsUpstreamGenerator.map()
 
-			/*
-			 * Code Generation DML
-			 */
+			serviceModels.add(serviceModel)
+		}
+		
+		// Add 'required microservices' statement
+		for (serviceModel : serviceModels) {
+			Util.addRequiredStatementIfDownstream(serviceModel, serviceModels, cmlModel.map, serviceModelPath)
+			Util.addInterfaceWithNoOpToEmptyMicroservice(serviceModel.microservices.get(0))
+		}
+
+		/*
+		 * Code Generation DML
+		 */
+		for (dataModel : dataModels) {
+			val ctx = dataModel.contexts.get(0)
+			
 			val dataExtractor = new DataDslExtractor()
 			System.out.println(dataExtractor.extractToString(dataModel))
 			val ctxPath = '''«dataModelPath»«File::separator»«ctx.name».data'''.toString
 			val ctxCode = dataExtractor.extractToString(ctx)
 			resultMap.put(ctxPath, ctxCode)
+		}
 
-			/*
-			 * Code Generation SML
-			 */
+		/*
+		 * Code Generation SML
+		 */
+		for (serviceModel : serviceModels) {
+			val service = serviceModel.microservices.get(0)
 			val serviceExtractor = new ServiceDslExtractor()
-			val servicePath = '''«serviceModelPath»«File::separator»«ctx.name».services'''.toString
+			val servicePath = '''«serviceModelPath»«File::separator»«Util.returnSimpleNameOfMicroservice(service)».services'''.toString
 			val serviceCode = serviceExtractor.extractToString(serviceModel)
 			resultMap.put(servicePath, serviceCode)
 			System.out.println(serviceCode)
 		}
-
+		
 		/*
 		 * Code Generation TML
 		 */

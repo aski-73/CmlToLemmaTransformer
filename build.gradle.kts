@@ -38,7 +38,10 @@ dependencies {
     
     // https://mvnrepository.com/artifact/org.contextmapper/context-mapper-dsl
 	implementation("org.contextmapper:context-mapper-dsl:6.6.0")
-
+	// https://mvnrepository.com/artifact/org.slf4j/slf4j-api
+	implementation("org.slf4j:slf4j-api:1.7.32")
+	// https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-api
+	implementation("org.apache.logging.log4j:log4j-api:2.17.1")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")

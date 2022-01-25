@@ -19,6 +19,7 @@ import de.fhdo.lemma.technology.Technology;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -97,6 +98,8 @@ public class LemmaCodeGenerationModule extends AbstractCodeGenerationModule {
         dataModels.add(dataModel);
       }
     }
+    int _size = dataModels.size();
+    final ArrayList<ServiceModel> serviceModels = new ArrayList<ServiceModel>(_size);
     for (final DataModel dataModel : dataModels) {
       {
         final Context ctx = dataModel.getContexts().get(0);
@@ -116,8 +119,20 @@ public class LemmaCodeGenerationModule extends AbstractCodeGenerationModule {
         ContextMap _map_3 = cmlModel.getMap();
         final OpenHostServiceUpstreamGenerator ohsUpstreamGenerator = new OpenHostServiceUpstreamGenerator(ctx, serviceModel, _get_1, _map_3, dataModelPath, technologyModelPath, technologies);
         ohsUpstreamGenerator.map();
+        serviceModels.add(serviceModel);
+      }
+    }
+    for (final ServiceModel serviceModel : serviceModels) {
+      {
+        Util.addRequiredStatementIfDownstream(serviceModel, serviceModels, cmlModel.getMap(), serviceModelPath);
+        Util.addInterfaceWithNoOpToEmptyMicroservice(serviceModel.getMicroservices().get(0));
+      }
+    }
+    for (final DataModel dataModel_1 : dataModels) {
+      {
+        final Context ctx = dataModel_1.getContexts().get(0);
         final DataDslExtractor dataExtractor = new DataDslExtractor();
-        System.out.println(dataExtractor.extractToString(dataModel));
+        System.out.println(dataExtractor.extractToString(dataModel_1));
         StringConcatenation _builder_3 = new StringConcatenation();
         _builder_3.append(dataModelPath);
         _builder_3.append(File.separator);
@@ -127,15 +142,20 @@ public class LemmaCodeGenerationModule extends AbstractCodeGenerationModule {
         final String ctxPath = _builder_3.toString();
         final String ctxCode = dataExtractor.extractToString(ctx);
         resultMap.put(ctxPath, ctxCode);
+      }
+    }
+    for (final ServiceModel serviceModel_1 : serviceModels) {
+      {
+        final Microservice service = serviceModel_1.getMicroservices().get(0);
         final ServiceDslExtractor serviceExtractor = new ServiceDslExtractor();
-        StringConcatenation _builder_4 = new StringConcatenation();
-        _builder_4.append(serviceModelPath);
-        _builder_4.append(File.separator);
-        String _name_1 = ctx.getName();
-        _builder_4.append(_name_1);
-        _builder_4.append(".services");
-        final String servicePath = _builder_4.toString();
-        final String serviceCode = serviceExtractor.extractToString(serviceModel);
+        StringConcatenation _builder_3 = new StringConcatenation();
+        _builder_3.append(serviceModelPath);
+        _builder_3.append(File.separator);
+        String _returnSimpleNameOfMicroservice = Util.returnSimpleNameOfMicroservice(service);
+        _builder_3.append(_returnSimpleNameOfMicroservice);
+        _builder_3.append(".services");
+        final String servicePath = _builder_3.toString();
+        final String serviceCode = serviceExtractor.extractToString(serviceModel_1);
         resultMap.put(servicePath, serviceCode);
         System.out.println(serviceCode);
       }

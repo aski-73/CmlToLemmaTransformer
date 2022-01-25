@@ -33,11 +33,14 @@ import org.contextmapper.tactic.dsl.tacticdsl.RepositoryOperation
 import de.fhdo.lemma.cml_transformer.factory.intermediate.CmlOperation
 import java.util.Map
 import de.fhdo.lemma.cml_transformer.Util
+import org.slf4j.LoggerFactory
+import java.util.Collections
 
 /**
  * Model transformation from ContextMapper DSL (CML) to LEMMA Domain Data Modeling Language (DML)
  */
 class DomainDataModelFactory {
+	static val LOGGER = LoggerFactory.getLogger(DomainDataModelFactory)
 	static val DATA_FACTORY = DataFactory.eINSTANCE
 
 	/**
@@ -59,10 +62,11 @@ class DomainDataModelFactory {
 		val ctx = DATA_FACTORY.createContext
 
 		// add DataStructures
-		dataStructures.addAll(dataModelFactory.mapAggregateToComplexType(agg, ctx))
+		val mappedAggregateAndReferencedTypes = dataModelFactory.mapAggregateToComplexType(agg, ctx)
+		Util.mergeComplexTypeLists(dataStructures, mappedAggregateAndReferencedTypes)
 
 		// add LEMMA ListTypes that might have be created during previous mapping
-		dataStructures.addAll(dataModelFactory.listsToGenerate)
+		Util.mergeComplexTypeLists(dataStructures, dataModelFactory.listsToGenerate)
 
 		return dataStructures
 	}
@@ -82,12 +86,14 @@ class DomainDataModelFactory {
 		// contains all extracted Entities and Value Objects of an CML Aggregate
 		val dataStructures = <ComplexType>newLinkedList
 		val ctx = DATA_FACTORY.createContext
+		ctx.dataModel = dataModelFactory.dataModel
 
 		// add DataStructures
-		dataStructures.addAll(dataModelFactory.mapServiceToComplexType(cmlDomainService, domainService, ctx))
+		val mappedDataStructures = dataModelFactory.mapServiceToComplexType(cmlDomainService, domainService, ctx)
+		Util.mergeComplexTypeLists(dataStructures, mappedDataStructures)
 
 		// add LEMMA ListTypes that might have be created during previous mapping
-		dataStructures.addAll(dataModelFactory.listsToGenerate)
+		Util.mergeComplexTypeLists(dataStructures, dataModelFactory.listsToGenerate)
 
 		return dataStructures
 	}
@@ -151,24 +157,20 @@ class DomainDataModelFactory {
 		if (bc.aggregates !== null) {
 			bc.aggregates.forEach [ agg |
 				val dataStructures = mapAggregateToComplexType(agg, ctx)
-				dataStructures.forEach [ struct |
-					// Tell the DataStructure in which context it is and visa versa
-					struct.context = ctx;
-					ctx.complexTypes.add(struct)
-				]
+				Util.addComplexTypesIntoContext(ctx, dataStructures)
 			]
 		}
 
 		// Application Service
-		if (bc.application !== null) { // Null-Safe Operator does not work ?
+		if (bc.application !== null) {
 			bc.application.services.forEach [ appService |
-				val lemmaAppService = mapServiceToComplexType(appService, false, ctx)
-				Util.addComplexTypesIntoContext(ctx, lemmaAppService)
+				val lemmaAppServiceWithComplexTypes = mapServiceToComplexType(appService, false, ctx)
+				Util.addComplexTypesIntoContext(ctx, lemmaAppServiceWithComplexTypes)
 			]
 		}
 
 		// Lists
-		ctx.complexTypes.addAll(listsToGenerate)
+		Util.addComplexTypesIntoContext(ctx, listsToGenerate)
 
 		return ctx
 	}
@@ -181,6 +183,9 @@ class DomainDataModelFactory {
 	 * 
 	 * @param agg CML {@link Aggregate} to map
 	 * @param ctx LEMMA {@link Context} which is needed for already checked domain objects
+	 * 
+	 * @return List of {@link ComplexType}. Each complex type is a part of the Aggregate parameter. The 
+	 * aggregate itself is is represented as its aggregate root.
 	 */
 	private def List<ComplexType> mapAggregateToComplexType(Aggregate agg, Context ctx) {
 		repositoriesAndOperationTypes.clear()
@@ -189,14 +194,14 @@ class DomainDataModelFactory {
 
 		// A CML Aggregate contains Entities, Value Objects and Repositories
 		for (obj : agg.domainObjects) {
-			val lemmaStructure = mapSimpleDomainObjectToComplexType(obj, ctx)
-			dataStructures.add(lemmaStructure)
+			val lemmaStructureAndReferencedTypes = mapSimpleDomainObjectToComplexType(obj, ctx)
+			Util.mergeComplexTypeLists(dataStructures, lemmaStructureAndReferencedTypes)
 		}
 
 		// Creating domain services
 		for (service : agg.services) {
-			val lemmaDomainServiceWithNeededTypes = mapServiceToComplexType(service, true, ctx)
-			Util.mergeComplexTypeLists(dataStructures, lemmaDomainServiceWithNeededTypes)
+			val lemmaDomainServiceAndReferencedTypes = mapServiceToComplexType(service, true, ctx)
+			Util.mergeComplexTypeLists(dataStructures, lemmaDomainServiceAndReferencedTypes)
 		}
 
 		// Add repositories and referenced types of other bounded contexts (in cml)
@@ -209,8 +214,11 @@ class DomainDataModelFactory {
 	 * Maps CML {@link SimpleDomainObject} (super class of {@link DomainObject} and {@link java.lang.Enum})
 	 * to a LEMMA {@link ComplexType}.
 	 * In other words it creates DataStructures and Enums depending on the given {@link SimpleDomainObject}
+	 * 
+	 * @returns List of {@link ComplexType}. First element is the mapped {@link SimpleDomainObject}. All other
+	 * elements are {@link ComplexTypes}s referenced by the first element.
 	 */
-	private def ComplexType mapSimpleDomainObjectToComplexType(SimpleDomainObject sObj, Context ctx) {
+	private def List<ComplexType> mapSimpleDomainObjectToComplexType(SimpleDomainObject sObj, Context ctx) {
 		// Depending on concrete Type of SimpleDomainObject call different Method.
 		return mapDomainObjectToConcreteComplexType(sObj, ctx)
 	}
@@ -221,13 +229,16 @@ class DomainDataModelFactory {
 	 * @param obj CML {@link DomainObject} to map
 	 * @param ctx LEMMA {@link Context} which is needed for already checked domain objects
 	 */
-	private def dispatch ComplexType mapDomainObjectToConcreteComplexType(DomainObject obj, Context ctx) {
+	private def dispatch List<ComplexType> mapDomainObjectToConcreteComplexType(DomainObject obj, Context ctx) {
 		val alreadyMappedType = obj.alreadyMapped(ctx)
 		if (alreadyMappedType !== null) {
-			return EcoreUtil.copy(alreadyMappedType)
+			return Collections.singletonList(EcoreUtil.copy(alreadyMappedType))
 		}
+		val referencedComplexTypes = <ComplexType>newLinkedList
 
 		val lemmaStructure = createDataStructure(obj.name)
+		lemmaStructure.context = ctx
+		referencedComplexTypes.add(lemmaStructure)
 
 		markedTypes.put(obj.name, EcoreUtil.copy(lemmaStructure))
 
@@ -265,7 +276,19 @@ class DomainDataModelFactory {
 			field.name = ref.name
 			field.immutable = ref.isNotChangeable
 
-			field.complexType = mapReferenceTypeToComplexType(ref, field, ctx)
+			// Map the CML Type to a DML type
+			val mappedTypeAndReferencedTypes = mapReferenceTypeToComplexType(ref, ctx)
+			Util.mergeComplexTypeLists(referencedComplexTypes, mappedTypeAndReferencedTypes)
+
+			// Assign mapped type to field
+			field.complexType = mappedTypeAndReferencedTypes.get(0)
+
+			if (ref.key) {
+				field.features.add(DataFieldFeature.IDENTIFIER)
+			}
+
+			// Complex Types are always a part of the aggregate
+			field.features.add(DataFieldFeature.PART)
 
 			// Knows in which DataStructure it is contained
 			field.dataStructure = lemmaStructure
@@ -275,9 +298,10 @@ class DomainDataModelFactory {
 
 		// Add DataOperations
 		obj.operations.forEach([ op |
-			val lemmaOp = mapDomainObjectOperationToDataOperation(op, ctx)
-			lemmaStructure.operations.add(lemmaOp)
-			lemmaOp.dataStructure = lemmaStructure
+			val lemmaOpAndReferencedTypes = mapDomainObjectOperationToDataOperation(op, ctx)
+			lemmaStructure.operations.add(lemmaOpAndReferencedTypes.key)
+			lemmaOpAndReferencedTypes.key.dataStructure = lemmaStructure
+			Util.mergeComplexTypeLists(referencedComplexTypes, lemmaOpAndReferencedTypes.value)
 		])
 
 		// Add repository of the domain object if one exists
@@ -286,14 +310,15 @@ class DomainDataModelFactory {
 			repositoriesAndOperationTypes.add(lemmaRepo)
 		}
 
-		return lemmaStructure
+		return referencedComplexTypes
 	}
 
 	/**
 	 * Maps CML {@link Enum} to LEMMA DML {@link Enumeration}
 	 */
-	private def dispatch ComplexType mapDomainObjectToConcreteComplexType(Enum obj, Context ctx) {
+	private def dispatch List<ComplexType> mapDomainObjectToConcreteComplexType(Enum obj, Context ctx) {
 		val lemmaEnum = createEnumeration(obj.name)
+		lemmaEnum.context = ctx
 
 		markedTypes.put(obj.name, EcoreUtil.copy(lemmaEnum))
 
@@ -301,14 +326,19 @@ class DomainDataModelFactory {
 			lemmaEnum.fields.add(createEnumerationField(enumValue.name))
 		]
 
-		return lemmaEnum
+		return Collections.singletonList(lemmaEnum)
 	}
 
 	/**
 	 * Maps a CML Operation ({@link ServiceOperation}, {@link RepositoryOperation}, {@link DomainOperation}) to a 
 	 * LEMMA {@link DataOperation}
+	 * 
+	 * @returns Pair. First Element is the mapped DML {@link DataOperation}. Second element is a list
+	 * of {@link ComplexType} that the data operations references.
 	 */
-	private def DataOperation mapCmlOperationToDataOperation(CmlOperation cmlOp, Context ctx) {
+	private def Pair<DataOperation, List<ComplexType>> mapCmlOperationToDataOperation(CmlOperation cmlOp, Context ctx) {
+		val referencedComplexTypes = <ComplexType>newLinkedList
+
 		val lemmaOp = DATA_FACTORY.createDataOperation
 		lemmaOp.name = cmlOp.name
 
@@ -316,7 +346,8 @@ class DomainDataModelFactory {
 			lemmaOp.hasNoReturnType = true
 		} else { // Set ReturnType
 			if (cmlOp.returnType.domainObjectType !== null) {
-				lemmaOp.complexReturnType = mapComplexTypes(cmlOp.returnType, ctx)
+				referencedComplexTypes.addAll(mapComplexTypes(cmlOp.returnType, ctx))
+				lemmaOp.complexReturnType = referencedComplexTypes.get(0)
 				repositoriesAndOperationTypes.addIfNotExists(EcoreUtil.copy(lemmaOp.complexReturnType))
 			} else {
 				lemmaOp.primitiveReturnType = mapPrimitiveType(cmlOp.returnType.type)
@@ -328,36 +359,41 @@ class DomainDataModelFactory {
 			val lemmaParam = DATA_FACTORY.createDataOperationParameter
 			lemmaParam.name = param.name
 			if (param.parameterType.domainObjectType !== null) { // Complex Type
-				lemmaParam.complexType = mapComplexTypes(param.parameterType, ctx)
+				val cTypes = mapComplexTypes(param.parameterType, ctx)
+				lemmaParam.complexType = cTypes.get(0)
 				repositoriesAndOperationTypes.addIfNotExists(EcoreUtil.copy(lemmaParam.complexType))
-
+				// Need to merge because types can already exist due to return type
+				Util.mergeComplexTypeLists(referencedComplexTypes, cTypes)
 			} else { // Primitive Type
 				lemmaParam.primitiveType = mapPrimitiveType(param.parameterType.type)
 			}
 			lemmaOp.parameters.add(lemmaParam)
 		])
 
-		return lemmaOp
+		return lemmaOp -> referencedComplexTypes
 	}
 
 	/**
 	 * Maps CML {@link RepositoryOperation} to LEMMA DML {@link DataOperation}
 	 */
-	private def DataOperation mapRepositoryOperationToDataOperation(RepositoryOperation cmlOp, Context ctx) {
+	private def Pair<DataOperation, List<ComplexType>> mapRepositoryOperationToDataOperation(RepositoryOperation cmlOp,
+		Context ctx) {
 		return mapCmlOperationToDataOperation(new CmlOperation(cmlOp.name, cmlOp.returnType, cmlOp.parameters), ctx)
 	}
 
 	/**
 	 * Maps CML {@link DomainObjectOperation} to LEMMA DML {@link DataOperation}
 	 */
-	private def DataOperation mapDomainObjectOperationToDataOperation(DomainObjectOperation cmlOp, Context ctx) {
+	private def Pair<DataOperation, List<ComplexType>> mapDomainObjectOperationToDataOperation(
+		DomainObjectOperation cmlOp, Context ctx) {
 		return mapCmlOperationToDataOperation(new CmlOperation(cmlOp.name, cmlOp.returnType, cmlOp.parameters), ctx)
 	}
 
 	/**
 	 * Maps CML {@link ServiceOperation} to LEMMA DML {@link DataOperation}
 	 */
-	private def DataOperation mapServiceOperationToDataOperation(ServiceOperation cmlOp, Context ctx) {
+	private def Pair<DataOperation, List<ComplexType>> mapServiceOperationToDataOperation(ServiceOperation cmlOp,
+		Context ctx) {
 		return mapCmlOperationToDataOperation(new CmlOperation(cmlOp.name, cmlOp.returnType, cmlOp.parameters), ctx)
 	}
 
@@ -369,10 +405,12 @@ class DomainDataModelFactory {
 	 */
 	private def List<ComplexType> mapServiceToComplexType(Service cmlDomainService, boolean domainService,
 		Context ctx) {
-		val dataStructures = <ComplexType>newLinkedList
+		val referencedComplexTypes = <ComplexType>newLinkedList
 
 		val lemmaDomainService = DATA_FACTORY.createDataStructure
 		lemmaDomainService.name = cmlDomainService.name
+		referencedComplexTypes.add(lemmaDomainService)
+
 		if (domainService) {
 			lemmaDomainService.features.add(ComplexTypeFeature.DOMAIN_SERVICE)
 		} else {
@@ -380,31 +418,35 @@ class DomainDataModelFactory {
 		}
 
 		cmlDomainService.operations.forEach [ cmlOp |
-			val lemmaOp = mapServiceOperationToDataOperation(cmlOp, ctx)
-			lemmaDomainService.operations.add(lemmaOp)
+			val lemmaOpAndComplexTypes = mapServiceOperationToDataOperation(cmlOp, ctx)
+			lemmaDomainService.operations.add(lemmaOpAndComplexTypes.key)
+			Util.mergeComplexTypeLists(referencedComplexTypes, lemmaOpAndComplexTypes.value)
 		]
 
-		dataStructures.add(lemmaDomainService)
-
 		// Add repositories and referenced types of other bounded contexts (in cml)
-		Util.mergeComplexTypeLists(dataStructures, repositoriesAndOperationTypes)
+		Util.mergeComplexTypeLists(referencedComplexTypes, repositoriesAndOperationTypes)
 
-		return dataStructures
+		return referencedComplexTypes
 	}
 
 	/** 
 	 * Maps a CML {@link Repository} to a DML {@link DataStructure}.
 	 */
 	private def mapRepositoryToDataStructure(Repository repo, Context ctx) {
+		val referencedTypes = <ComplexType>newLinkedList
 		val lemmaStructure = DATA_FACTORY.createDataStructure
 		lemmaStructure.name = repo.name
 		lemmaStructure.features.add(ComplexTypeFeature.REPOSITORY)
+		lemmaStructure.context = ctx
+		referencedTypes.add(lemmaStructure)
 
 		// Add DataOperations
 		repo.operations.forEach([ op |
-			val lemmaOp = mapRepositoryOperationToDataOperation(op, ctx)
-			lemmaStructure.operations.add(lemmaOp)
-			lemmaOp.dataStructure = lemmaStructure
+			val lemmaOpAndComplexTypes = mapRepositoryOperationToDataOperation(op, ctx)
+			lemmaStructure.operations.add(lemmaOpAndComplexTypes.key)
+			lemmaOpAndComplexTypes.key.dataStructure = lemmaStructure
+
+			Util.mergeComplexTypeLists(referencedTypes, lemmaOpAndComplexTypes.value)
 		])
 
 		return lemmaStructure
@@ -506,25 +548,21 @@ class DomainDataModelFactory {
 	 * Maps CML {@link Reference#domainObjectType} to LEMMA DML {@link ComplexType} and returns it.
 	 * If the {@link Reference} has a list type of {@link CollectionType} a LEMMA DML {@link ListType} will be mapped (and 
 	 * created if not existed yet)
+	 * 
+	 * @returns List of {@link ComplexType}s. First element is the mapped DML {@link ComplexType}. All other elements
+	 * are referenced by the first element.
 	 */
-	private def mapReferenceTypeToComplexType(Reference ref, DataField field, Context ctx) {
-		var complexType = findOrCreateComplexTypeBySimpleDomainObject(ref.domainObjectType, ctx)
+	private def List<ComplexType> mapReferenceTypeToComplexType(Reference ref, Context ctx) {
+		val cTypeAndReferencedTypes = findOrCreateComplexTypeBySimpleDomainObject(ref.domainObjectType, ctx)
 
 		// If a list is used in CML then an extra list type must be generated for LEMMA DML
 		if (ref.collectionType.equals(CollectionType.LIST)) {
-			val list = complexType.createListTypeIfNotExisting
+			val list = cTypeAndReferencedTypes.get(0).createListTypeIfNotExisting
 			this.listsToGenerate.add(list)
-			complexType = list
+			cTypeAndReferencedTypes.set(0, list)
 		}
 
-		if (ref.key) {
-			field.features.add(DataFieldFeature.IDENTIFIER)
-		}
-
-		// Complex Types are always a part of the aggregate
-		field.features.add(DataFieldFeature.PART)
-
-		return complexType
+		return cTypeAndReferencedTypes
 	}
 
 	/**
@@ -575,24 +613,27 @@ class DomainDataModelFactory {
 	 * 
 	 * If the CML {@link org.contextmapper.tactic.dsl.tacticdsl.ComplexType} is a list then a 
 	 * LEMMA {@link ListType} will be returned (and created if not existing)
+	 * 
+	 * @returns List. First element is the mapped Complex Type. All other elements are complex types 
+	 * that are referenced by the first element.
 	 */
-	private def ComplexType mapComplexTypes(org.contextmapper.tactic.dsl.tacticdsl.ComplexType cmlComplexType,
+	private def List<ComplexType> mapComplexTypes(org.contextmapper.tactic.dsl.tacticdsl.ComplexType cmlComplexType,
 		Context ctx) {
 		// If a list is used in CML then an extra list type must be generated for LEMMA DML
 		if (cmlComplexType.collectionType.equals(CollectionType.LIST)) {
 			// If cmlComplexType is a List, then the generic type (primitive or complex) of the list must be checked in order to
 			// call the correct list creating method.
-			var ListType list = null
+			var ListType listType = null
 			if (cmlComplexType.domainObjectType !== null) { // Complex Type
 				val lemmaComplexType = findOrCreateComplexTypeBySimpleDomainObject(cmlComplexType.domainObjectType, ctx)
-				list = lemmaComplexType.createListTypeIfNotExisting
+				listType = lemmaComplexType.get(0).createListTypeIfNotExisting
 			} else {
 				val lemmaPrimitiveType = mapPrimitiveType(cmlComplexType.type)
-				list = lemmaPrimitiveType.createListTypeIfNotExisting
+				listType = lemmaPrimitiveType.createListTypeIfNotExisting
 			}
 
-			this.listsToGenerate.add(list)
-			return list
+			this.listsToGenerate.add(listType)
+			return Collections.singletonList(listType)
 		} else { // Not a list
 			return findOrCreateComplexTypeBySimpleDomainObject(cmlComplexType.domainObjectType, ctx)
 		}
@@ -603,16 +644,19 @@ class DomainDataModelFactory {
 	 * by returning the needed {@link ComplexType} from the LEMMA {@link DataModel}.
 	 * If its not existing, it will be created on the fly.
 	 */
-	private def ComplexType findOrCreateComplexTypeBySimpleDomainObject(SimpleDomainObject sObj, Context ctx) {
+	private def List<ComplexType> findOrCreateComplexTypeBySimpleDomainObject(SimpleDomainObject sObj, Context ctx) {
 		for (lemmaComplexType : ctx.complexTypes) {
-			if (sObj.name.equals(lemmaComplexType.name))
-				return lemmaComplexType; // already in the data model
+			if (sObj.name.equals(lemmaComplexType.name)) {
+				// Already in the data model. Return as singleton list because all other
+				// referenced types by lemmaComplexType are already in the context				
+				return Collections.singletonList(lemmaComplexType)
+			}
 		}
 
-		// not in the data model, but might be "in mapping"
+		// Not in the data model, but might be "in mapping" (look ahead)
 		for (type : markedTypes.keySet()) {
 			if (sObj.name.equals(type))
-				return markedTypes.get(type);
+				return Collections.singletonList(markedTypes.get(type))
 		}
 
 		// Not in the data model yet. Create it

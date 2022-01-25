@@ -47,15 +47,10 @@ class OpenHostServiceDownstreamGenerator extends AbstractRelationshipGenerator {
 				// For every exposed aggregate X look up the Application Service in the LEMMA Context that exposes X
 				for (exposedAggregate : (rel as UpstreamDownstreamRelationship).upstreamExposedAggregates) {
 
+					// "Api"-Service that must exist in the upstream context
 					val appService = upstreamBoundedContext.application.services.stream.filter[cmlAppService|
 						cmlAppService.name.equals(exposedAggregate.name + "Api")
 					].findAny()
-
-
-					// "Api"-Service that must already exist in the DML DataModel
-//					val appService = upstreamContext.complexTypes.stream.filter [ cType |
-//						cType.name.equals(exposedAggregate.name + "Api")
-//					].findFirst()
 
 					// Check if an Accessor is already defined for the Api
 					val accessorService = this.targetCtx.complexTypes.stream.filter [ cType |
@@ -73,9 +68,8 @@ class OpenHostServiceDownstreamGenerator extends AbstractRelationshipGenerator {
 	}
 
 	/**
-	 * Maps an Application Service that represents the API exposing an Aggregate to another Application Service that
+	 * Maps an CML Application Service that represents the API exposing an Aggregate to DML Application Service that
 	 * represents an Accessor accessing the API.
-	 * If the exposed aggregate is not in the 
 	 * 
 	 * @param appService DML application service representing the upstream Api
 	 * @param exposedAggregate CML aggregate representing the aggregate that is accessed by the Accessor.

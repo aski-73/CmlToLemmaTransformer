@@ -14,7 +14,6 @@ abstract class AbstractRelationshipGenerator {
 	 * Mapped LEMMA DML {@link Context} which receives the relationship implementation
 	 */
 	protected Context targetCtx
-	
 		
 	/**
 	 * All instantiated LEMMA DataModels so far

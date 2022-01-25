@@ -2,6 +2,7 @@ package de.fhdo.lemma.cml_transformer.factory.context_map;
 
 import de.fhdo.lemma.cml_transformer.Util;
 import de.fhdo.lemma.cml_transformer.factory.TechnologyModelFactory;
+import de.fhdo.lemma.cml_transformer.technologies.CustomTechnology;
 import de.fhdo.lemma.data.ComplexType;
 import de.fhdo.lemma.data.Context;
 import de.fhdo.lemma.data.DataModel;
@@ -24,7 +25,6 @@ import de.fhdo.lemma.service.ServiceFactory;
 import de.fhdo.lemma.service.ServiceModel;
 import de.fhdo.lemma.technology.CommunicationType;
 import de.fhdo.lemma.technology.ExchangePattern;
-import de.fhdo.lemma.technology.ServiceAspect;
 import de.fhdo.lemma.technology.Technology;
 import java.util.LinkedList;
 import java.util.List;
@@ -74,7 +74,7 @@ public class OpenHostServiceUpstreamGenerator extends AbstractRelationshipGenera
   
   private String technologyModelPath;
   
-  private final TechnologyModelFactory techFactory = new TechnologyModelFactory();
+  private final TechnologyModelFactory techFactory;
   
   public OpenHostServiceUpstreamGenerator(final Context context, final ServiceModel serviceModel, final Microservice service, final ContextMap map, final String domainDataModelPath, final String technologyModelPath, final List<Technology> technologies) {
     super(context, map, CollectionLiterals.<DataModel>newLinkedList());
@@ -83,6 +83,8 @@ public class OpenHostServiceUpstreamGenerator extends AbstractRelationshipGenera
     this.domainDataModelPath = domainDataModelPath;
     this.technologyModelPath = technologyModelPath;
     this.technologies = technologies;
+    TechnologyModelFactory _technologyModelFactory = new TechnologyModelFactory(technologyModelPath);
+    this.techFactory = _technologyModelFactory;
   }
   
   /**
@@ -110,15 +112,15 @@ public class OpenHostServiceUpstreamGenerator extends AbstractRelationshipGenera
         final Optional<ComplexType> appService = this.targetCtx.getComplexTypes().stream().filter(_function_1).findFirst();
         boolean _isPresent = appService.isPresent();
         if (_isPresent) {
-          final Technology technology = this.techFactory.generateTechnologymodel(rel.getImplementationTechnology());
+          final CustomTechnology cTechnology = this.techFactory.generateTechnologymodel(rel.getImplementationTechnology());
           ComplexType _get = appService.get();
-          final Pair<Interface, List<Import>> interfaceImportPair = this.mapApplicationServiceToServiceInterface(((DataStructure) _get), technology);
+          final Pair<Interface, List<Import>> interfaceImportPair = this.mapApplicationServiceToServiceInterface(((DataStructure) _get), cTechnology);
           this.service.getInterfaces().add(interfaceImportPair.getKey());
           this.serviceModel.getImports().addAll(interfaceImportPair.getValue());
-          boolean _technologyExists = Util.technologyExists(this.technologies, technology);
+          boolean _technologyExists = Util.technologyExists(this.technologies, cTechnology.getTechnology());
           boolean _not = (!_technologyExists);
           if (_not) {
-            this.technologies.add(technology);
+            this.technologies.add(cTechnology.getTechnology());
           }
         }
       };
@@ -134,7 +136,7 @@ public class OpenHostServiceUpstreamGenerator extends AbstractRelationshipGenera
    * 
    * @return Pair: Mapped Interface -> List with the used imports
    */
-  private Pair<Interface, List<Import>> mapApplicationServiceToServiceInterface(final DataStructure appService, final Technology technology) {
+  private Pair<Interface, List<Import>> mapApplicationServiceToServiceInterface(final DataStructure appService, final CustomTechnology cTechnology) {
     final Interface interface_ = OpenHostServiceUpstreamGenerator.SERVICE_FACTORY.createInterface();
     interface_.setName(appService.getName());
     final LinkedList<Import> imports = CollectionLiterals.<Import>newLinkedList();
@@ -142,14 +144,14 @@ public class OpenHostServiceUpstreamGenerator extends AbstractRelationshipGenera
     if (_operations!=null) {
       final Consumer<DataOperation> _function = (DataOperation appServiceOp) -> {
         final Operation serviceOp = this.mapDataOperationToServiceOperation(appServiceOp, imports);
-        if ((technology != null)) {
+        if ((cTechnology != null)) {
           final ImportedServiceAspect importedServiceAspect = OpenHostServiceUpstreamGenerator.SERVICE_FACTORY.createImportedServiceAspect();
-          importedServiceAspect.setImportedAspect(this.techFactory.mapMethodNamesToServiceAspectNames(serviceOp.getName()));
-          importedServiceAspect.setImport(this.returnImportForTechnology(technology));
+          importedServiceAspect.setImportedAspect(cTechnology.mapMethodNamesToServiceAspect(serviceOp.getName()));
+          importedServiceAspect.setImport(Util.returnImportForTechnology(cTechnology.getTechnology(), this.technologyModelPath));
           final ImportedProtocolAndDataFormat importedProtocol = OpenHostServiceUpstreamGenerator.SERVICE_FACTORY.createImportedProtocolAndDataFormat();
-          importedProtocol.setDataFormat(technology.getProtocols().get(0).getDataFormats().get(0));
-          importedProtocol.setImportedProtocol(technology.getProtocols().get(0));
-          importedProtocol.setImport(this.returnImportForTechnology(technology));
+          importedProtocol.setDataFormat(cTechnology.getTechnology().getProtocols().get(0).getDataFormats().get(0));
+          importedProtocol.setImportedProtocol(cTechnology.getTechnology().getProtocols().get(0));
+          importedProtocol.setImport(Util.returnImportForTechnology(cTechnology.getTechnology(), this.technologyModelPath));
           final Endpoint endpoint = OpenHostServiceUpstreamGenerator.SERVICE_FACTORY.createEndpoint();
           EList<String> _addresses = endpoint.getAddresses();
           String _name = interface_.getName();
@@ -158,7 +160,7 @@ public class OpenHostServiceUpstreamGenerator extends AbstractRelationshipGenera
           endpoint.getProtocols().add(importedProtocol);
           serviceOp.getEndpoints().add(endpoint);
           serviceOp.getAspects().add(importedServiceAspect);
-          final Import technologyImport = this.returnImportForTechnology(technology);
+          final Import technologyImport = Util.returnImportForTechnology(cTechnology.getTechnology(), this.technologyModelPath);
           boolean _importExists = Util.importExists(imports, technologyImport);
           boolean _not = (!_importExists);
           if (_not) {
@@ -243,32 +245,32 @@ public class OpenHostServiceUpstreamGenerator extends AbstractRelationshipGenera
   }
   
   /**
-   * Builds a {@link Import} for a {@link ComplexType} of the {@link DataModel}
+   * Builds a {@link Import} for a {@link ComplexType} which must be located in targetCtx.
+   * A microservice can only import types from the own data model since one team is responsible
+   * for all of their domain concepts.
    */
   private Import returnImportForComplexType(final ComplexType cType) {
     final Import import_ = OpenHostServiceUpstreamGenerator.SERVICE_FACTORY.createImport();
-    import_.setName(cType.getName());
-    String _name = cType.getName();
+    import_.setName(this.targetCtx.getName());
+    String _name = this.targetCtx.getName();
     String _plus = ((this.domainDataModelPath + "/") + _name);
     String _plus_1 = (_plus + ".data");
     import_.setImportURI(_plus_1);
     import_.setImportType(ImportType.DATATYPES);
-    import_.setT_relatedImportAlias(cType.getName());
-    return import_;
-  }
-  
-  /**
-   * Builds a {@link Import} for a {@link ServiceAspect} of a {@link Technology}
-   */
-  private Import returnImportForTechnology(final Technology technology) {
-    final Import import_ = OpenHostServiceUpstreamGenerator.SERVICE_FACTORY.createImport();
-    import_.setName(technology.getName());
-    String _name = technology.getName();
-    String _plus = ((this.technologyModelPath + "/") + _name);
-    String _plus_1 = (_plus + ".technology");
-    import_.setImportURI(_plus_1);
-    import_.setImportType(ImportType.TECHNOLOGY);
-    import_.setT_relatedImportAlias(technology.getName());
+    import_.setT_relatedImportAlias(this.targetCtx.getName());
+    final Predicate<ComplexType> _function = (ComplexType tempComplexType) -> {
+      return tempComplexType.getName().equals(cType.getName());
+    };
+    final Optional<ComplexType> check = this.targetCtx.getComplexTypes().stream().filter(_function).findAny();
+    boolean _isEmpty = check.isEmpty();
+    if (_isEmpty) {
+      String _name_1 = cType.getName();
+      String _plus_2 = ("Complex Type " + _name_1);
+      String _plus_3 = (_plus_2 + " doesn\'t exist in context ");
+      String _name_2 = this.targetCtx.getName();
+      String _plus_4 = (_plus_3 + _name_2);
+      System.out.println(_plus_4);
+    }
     return import_;
   }
   
