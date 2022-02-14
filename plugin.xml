@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="4.20"?>
+<plugin>
+    <extension
+         point="org.eclipse.ui.commands">
+      <category
+            id="de.fhdo.lemma.cml_transformer.category"
+            name="Cml2Lemma">
+      </category>
+      <command
+            categoryId="de.fhdo.lemma.cml_transformer.category"
+            id="de.fhdo.lemma.cml_transformer.commands.transformToLemma"
+            name="Transform CML Model to LEMMA Models">
+      </command>
+    </extension>
+    <extension
+         point="org.eclipse.ui.handlers">
+         <handler
+            class="de.fhdo.lemma.cml_transformer.ui.TransformToLemmaHandler"
+            commandId="de.fhdo.lemma.cml_transformer.commands.transformToLemma">
+         </handler>
+    </extension>
+    <extension
+         point="org.eclipse.ui.menus">
+      <menuContribution
+            locationURI="popup:org.eclipse.ui.popup.any?after=additions">
+        <command
+              commandId="de.fhdo.lemma.cml_transformer.commands.transformToLemma"
+              icon="src/main/resources/icons/cml_icon.png"
+              id="de.fhdo.lemma.cml_transformer.menus.transformToLemma"
+              mnemonic="A"
+              style="radio">
+              <visibleWhen>
+                <with variable="activeMenuSelection">
+                    <iterate
+                        ifEmpty="false">
+                        <adapt
+                            type="org.eclipse.core.resources.IResource">
+                                <test property="org.eclipse.core.resources.name" value="*.cml" />
+                        </adapt>
+                    </iterate>
+                </with>
+              </visibleWhen>
+        </command>
+      </menuContribution>
+   </extension>
+</plugin>
